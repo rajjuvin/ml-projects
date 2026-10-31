@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "scoring": "average_precision",
+  "cv": {
+    "splitter": "StratifiedGroupKFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "random_state": 42
+  },
+  "models": {
+    "logistic_regression": {
+      "params": {
+        "C": 0.1,
+        "class_weight": null,
+        "l1_ratio": 0
+      },
+      "cv_pr_auc_mean": 0.2188478100198108,
+      "cv_pr_auc_std": 0.004012429302964652,
+      "search": "grid",
+      "n_candidates": 6,
+      "search_space": {
+        "C": [
+          0.01,
+          0.1,
+          1.0
+        ],
+        "l1_ratio": [
+          0
+        ],
+        "class_weight": [
+          null,
+          "balanced"
+        ]
+      },
+      "fast_run": false,
+      "tuned_at_utc": "2026-10-31T09:23:47+00:00",
+      "data_file_sha256": "0689e7ec031237dc63031b938805c48377748761a3b26acab621567afa24df97",
+      "n_train_encounters": 79541,
+      "libraries": {
+        "python": "3.13.18",
+        "scikit-learn": "1.9.1",
+        "xgboost": "3.4.1"
+      }
+    },
+    "decision_tree": {
+      "params": {
+        "class_weight": null,
+        "max_depth": 10,
+        "min_samples_leaf": 50
+      },
+      "cv_pr_auc_mean": 0.2004305290443554,
+      "cv_pr_auc_std": 0.004459290696748778,
+      "search": "grid",
+      "n_candidates": 12,
+      "search_space": {
+        "max_depth": [
+          5,
+          10,
+          null
+        ],
+        "min_samples_leaf": [
+          10,
+          50
+        ],
+        "class_weight": [
+          null,
+          "balanced"
+        ]
+      },
+      "fast_run": false,
+      "tuned_at_utc": "2026-10-31T09:26:55+00:00",
+      "data_file_sha256": "0689e7ec031237dc63031b938805c48377748761a3b26acab621567afa24df97",
+      "n_train_encounters": 79541,
+      "libraries": {
+        "python": "3.13.18",
+        "scikit-learn": "1.9.1",
+        "xgboost": "3.4.1"
+      }
+    },
+    "random_forest": {
+      "params": {
+        "class_weight": null,
+        "max_depth": 10,
+        "min_samples_leaf": 10
+      },
+      "cv_pr_auc_mean": 0.2150758290922397,
+      "cv_pr_auc_std": 0.005035511329834209,
+      "search": "grid",
+      "n_candidates": 2,
+      "search_space": {
+        "max_depth": [
+          10
+        ],
+        "min_samples_leaf": [
+          10
+        ],
+        "class_weight": [
+          null,
+          "balanced"
+        ]
+      },
+      "fast_run": false,
+      "tuned_at_utc": "2026-10-31T09:27:54+00:00",
+      "data_file_sha256": "0689e7ec031237dc63031b938805c48377748761a3b26acab621567afa24df97",
+      "n_train_encounters": 79541,
+      "libraries": {
+        "python": "3.13.18",
+        "scikit-learn": "1.9.1",
+        "xgboost": "3.4.1"
+      }
+    },
+    "xgboost": {
+      "params": {
+        "subsample": 0.9,
+        "scale_pos_weight": 1,
+        "reg_lambda": 10,
+        "n_estimators": 400,
+        "min_child_weight": 10,
+        "max_depth": 6,
+        "learning_rate": 0.05,
+        "colsample_bytree": 0.3
+      },
+      "cv_pr_auc_mean": 0.23401044829431292,
+      "cv_pr_auc_std": 0.003959093601410541,
+      "search": "randomized (n_iter=30)",
+      "n_candidates": 30,
+      "search_space": {
+        "n_estimators": [
+          200,
+          400,
+          800
+        ],
+        "learning_rate": [
+          0.01,
+          0.03,
+          0.05
+        ],
+        "max_depth": [
+          2,
+          3,
+          4,
+          6
+        ],
+        "min_child_weight": [
+          1,
+          10,
+          50
+        ],
+        "subsample": [
+          0.7,
+          0.9
+        ],
+        "colsample_bytree": [
+          0.3,
+          0.6
+        ],
+        "reg_lambda": [
+          1,
+          10
+        ],
+        "scale_pos_weight": [
+          1,
+          7.742690701253022
+        ]
+      },
+      "fast_run": false,
+      "tuned_at_utc": "2026-10-31T09:37:58+00:00",
+      "data_file_sha256": "0689e7ec031237dc63031b938805c48377748761a3b26acab621567afa24df97",
+      "n_train_encounters": 79541,
+      "libraries": {
+        "python": "3.13.18",
+        "scikit-learn": "1.9.1",
+        "xgboost": "3.4.1"
+      }
+    },
+    "mlp": {
+      "params": {
+        "alpha": 0.1,
+        "hidden_layer_sizes": [
+          64
+        ]
+      },
+      "cv_pr_auc_mean": 0.22363199997566352,
+      "cv_pr_auc_std": 0.0036851146383070363,
+      "search": "grid",
+      "n_candidates": 6,
+      "search_space": {
+        "hidden_layer_sizes": [
+          [
+            64
+          ],
+          [
+            128,
+            64
+          ]
+        ],
+        "alpha": [
+          0.01,
+          0.1,
+          1.0
+        ]
+      },
+      "fast_run": false,
+      "tuned_at_utc": "2026-10-31T09:41:06+00:00",
+      "data_file_sha256": "0689e7ec031237dc63031b938805c48377748761a3b26acab621567afa24df97",
+      "n_train_encounters": 79541,
+      "libraries": {
+        "python": "3.13.18",
+        "scikit-learn": "1.9.1",
+        "xgboost": "3.4.1"
+      }
+    }
+  }
+}

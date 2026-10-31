@@ -1,5 +1,7 @@
 """Synthetic encounter-level data with the same schema as diabetic_data.csv (the real file is not in CI)."""
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -45,6 +47,22 @@ def make_frame(n=800, seed=0, n_patients=500, raw=False):
     if raw:
         df = df.rename(columns={new: old for old, new in config.COLUMN_RENAMES.items()})
     return df
+
+
+@pytest.fixture
+def write_params_file():
+    """Function writing a best_params.json that holds {model_key: {parameter: value}}, as readmission.tune does."""
+    def write(path, models):
+        entries = {key: {"params": params} for key, params in models.items()}
+        path.write_text(json.dumps({"schema_version": 1, "models": entries}), encoding="utf-8")
+    return write
+
+
+@pytest.fixture
+def in_tmp_cwd(tmp_path, monkeypatch):
+    """Run in an empty folder, so the default reports/best_params.json is never picked up from the repo."""
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
 
 
 @pytest.fixture

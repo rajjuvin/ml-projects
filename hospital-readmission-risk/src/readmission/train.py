@@ -22,7 +22,7 @@ import xgboost
 from readmission import __version__, config
 from readmission.data import DATA_FILE, prepare_datasets, split_xy
 from readmission.evaluation import evaluate_scores, oof_probabilities, select_f1_threshold
-from readmission.models import DISPLAY_NAMES, build_model
+from readmission.models import DISPLAY_NAMES, build_model, load_params, model_params, params_source
 
 MODEL_FILE = "readmission_model.joblib"
 METADATA_FILE = "metadata.json"
@@ -40,18 +40,20 @@ def _plain(metrics):
     return {key: float(value) for key, value in metrics.items()}
 
 
-def train(data_dir, model_key, out_dir, evaluate_test=False):
+def train(data_dir, model_key, out_dir, evaluate_test=False, params_file=None):
     data_path = Path(data_dir) / DATA_FILE
     train_df, test_df = prepare_datasets(data_path)
     X_train, y_train, groups = split_xy(train_df)
+    tuned = load_params(params_file)
+    overrides = tuned.get(model_key)
 
     # Out-of-fold scores (folds run in parallel, one thread per model) -> decision threshold.
-    oof = oof_probabilities(build_model(model_key, n_jobs=1), X_train, y_train, groups)
+    oof = oof_probabilities(build_model(model_key, n_jobs=1, params=overrides), X_train, y_train, groups)
     threshold = select_f1_threshold(y_train, oof)
     oof_metrics = evaluate_scores(y_train, oof, threshold)
 
     # Final fit on the full training split.
-    model = build_model(model_key, n_jobs=-1).fit(X_train, y_train)
+    model = build_model(model_key, n_jobs=-1, params=overrides).fit(X_train, y_train)
 
     test_metrics = None
     if evaluate_test:
@@ -70,6 +72,8 @@ def train(data_dir, model_key, out_dir, evaluate_test=False):
         "n_train_encounters": int(len(train_df)),
         "n_test_encounters": int(len(test_df)),
         "train_positive_rate": float(y_train.mean()),
+        "hyperparameters": model_params(model_key, overrides),
+        "hyperparameters_source": params_source(params_file, overrides),
         "numeric_columns": config.NUMERIC_COLUMNS,
         "categorical_columns": config.CATEGORICAL_COLUMNS,
         "oof_metrics": _plain(oof_metrics),
@@ -95,11 +99,14 @@ def main(argv=None):
     parser.add_argument("--data-dir", default="data", help="folder containing diabetic_data.csv")
     parser.add_argument("--model", default="xgboost", choices=list(DISPLAY_NAMES))
     parser.add_argument("--out-dir", default="models")
+    parser.add_argument("--params", default=None,
+                        help="tuned parameter file from readmission.tune (default: reports/best_params.json "
+                             "if it exists, otherwise built-in defaults)")
     parser.add_argument("--evaluate-test", action="store_true",
                         help="also score the held-out test set (run once, after model selection)")
     args = parser.parse_args(argv)
 
-    metadata = train(args.data_dir, args.model, args.out_dir, args.evaluate_test)
+    metadata = train(args.data_dir, args.model, args.out_dir, args.evaluate_test, args.params)
     print(f"Saved {metadata['model_name']} to {Path(args.out_dir) / MODEL_FILE} "
           f"(threshold {metadata['threshold']:.3f})")
     for label, key in (("Out-of-fold", "oof_metrics"), ("Test", "test_metrics")):

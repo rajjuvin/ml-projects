@@ -29,12 +29,12 @@ Full table: [reports/oof_comparison.csv](reports/oof_comparison.csv). The held-o
 ## Project layout
 
 ```
-src/readmission/    config, data loading and splitting, preprocessing, models, evaluation, training CLI
+src/readmission/    config, data loading and splitting, preprocessing, models, evaluation, tuning, training and comparison CLIs
 tests/              unit tests on synthetic data (no dataset needed)
 notebooks/          exploration, model tuning and comparison (hospreadmissionpred.ipynb)
 scripts/            download_data.py
 docs/               model card
-reports/            saved comparison table
+reports/            saved comparison table and tuned hyperparameters (best_params.json)
 data/, models/      downloaded data and trained artifacts (not committed)
 ```
 
@@ -50,9 +50,12 @@ pip install -e . --no-deps
 
 python scripts/download_data.py                   # fetches and verifies the UCI dataset into data/
 pytest                                            # unit tests
+python -m readmission.tune                        # optional: re-run the hyperparameter search, rewrites reports/best_params.json (about 20 minutes)
 python -m readmission.compare                     # reproduce the comparison table (a few minutes)
 python -m readmission.train --model xgboost       # trains, picks the threshold, saves models/readmission_model.joblib
 ```
+
+`train` and `compare` read the tuned values from `reports/best_params.json`. To try one model without waiting for all five, use `python -m readmission.compare --models decision_tree` (prints the result and does not overwrite the saved table), or `python -m readmission.tune --models decision_tree` to re-tune just that model.
 
 `python -m readmission.train --evaluate-test` also scores the held-out test set. Run it once, after the model and threshold are final.
 
@@ -61,14 +64,14 @@ python -m readmission.train --model xgboost       # trains, picks the threshold,
 - **Cohort:** inpatient encounters with a diabetes diagnosis, excluding death and hospice discharges. 101,766 encounters in the source data.
 - **Split:** 80/20 by patient, so no patient appears in both train and test. Cross-validation is grouped by patient.
 - **Preprocessing:** missing values (`?`) imputed; lab results "None" kept as an explicit `not_measured` category; one-hot encoding with rare categories pooled; numerics scaled only for logistic regression and the MLP.
-- **Tuning:** grid or randomized search with grouped cross-validation, refit on PR-AUC. 
+- **Tuning:** exhaustive grid search (30 random candidates for XGBoost) with patient-grouped cross-validation, selecting on PR-AUC (average precision). `python -m readmission.tune` runs it and saves the winners, with their CV scores and the data fingerprint, to `reports/best_params.json`.
 - **Threshold:** maximizes F1 on out-of-fold training predictions, never on the test set.
 
 ## Roadmap
 
 1. ✅ Model comparison (logistic regression, decision tree, random forest, XGBoost, neural network)
 2. ✅ Reproducible package, tests and CI
-3. Reproducible hyperparameter tuning script, with tuned values stored in a JSON file
+3. ✅ Reproducible hyperparameter tuning script, with tuned values stored in a JSON file
 4. Prediction API (FastAPI) with input validation and tests
 5. Docker packaging, live deployment, monitoring and rollback procedure
 6. Demo page and final write-up

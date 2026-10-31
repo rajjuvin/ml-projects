@@ -22,7 +22,7 @@
 
 ## Model
 - Preprocessing: `"?"` treated as missing and imputed (median for numerics, an explicit `not_recorded` category for categoricals), lab "None" values kept as `not_measured`, one-hot encoding with rare categories pooled.
-- Candidates: logistic regression, decision tree, random forest, XGBoost, MLP. Hyperparameters were tuned with grouped cross-validation, refitting on PR-AUC.
+- Candidates: logistic regression, decision tree, random forest, XGBoost, MLP. Hyperparameters were tuned with patient-grouped cross-validation, selecting on PR-AUC. The search spaces and winning values can be reproduced with `python -m readmission.tune` and are recorded in `reports/best_params.json`.
 - Decision threshold: chosen to maximize F1 on out-of-fold training predictions (never on the test set).
 
 ## Evaluation

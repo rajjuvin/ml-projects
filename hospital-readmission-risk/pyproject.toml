@@ -22,6 +22,7 @@ dev = ["pytest>=9", "ruff>=0.17"]
 [project.scripts]
 readmission-train = "readmission.train:main"
 readmission-compare = "readmission.compare:main"
+readmission-tune = "readmission.tune:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
