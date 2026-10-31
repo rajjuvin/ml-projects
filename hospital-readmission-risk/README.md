@@ -6,7 +6,7 @@ Estimates the probability that a diabetic inpatient encounter is followed by a h
 
 ## Results so far
 
-Five models compared on the same patient-grouped, 5-fold cross-validation of the training data (out-of-fold predictions; the held-out test set has not been touched). About 11.4% of encounters are positive, so the PR-AUC of a random guess is 0.114.
+Five models compared on the same patient-grouped, 5-fold cross-validation of the training data (out-of-fold predictions; the held-out test set played no part in this comparison). About 11.4% of encounters are positive, so the PR-AUC of a random guess is 0.114.
 
 | Model | ROC-AUC | PR-AUC | Accuracy | Precision | Recall | F1 | Precision in top 10% | Lift in top 10% |
 |---|---|---|---|---|---|---|---|---|
@@ -20,7 +20,19 @@ Note: PR-AUC is computed as average precision (scikit-learn’s `average_precisi
 
 Accuracy, precision, recall and F1 are at each model's own decision threshold, chosen to maximize F1 on the out-of-fold predictions. Accuracy is shown for completeness but is not a useful yardstick here: predicting "not readmitted" for every encounter already scores about 0.886. The comparison relies on ranking metrics (ROC-AUC, PR-AUC) and on what a team with limited capacity would see: **flagging the 10% highest-risk encounters finds readmissions about 2.4 times as often as picking at random.**
 
-Full table: [reports/oof_comparison.csv](reports/oof_comparison.csv). The held-out test results for the selected model are pending.
+Full table: [reports/oof_comparison.csv](reports/oof_comparison.csv).
+
+### Held-out test results (XGBoost)
+
+After the model, settings and threshold were fixed, XGBoost was scored once on the held-out test set: 19,802 encounters from patients not used in training.
+
+| ROC-AUC | PR-AUC | Accuracy | Precision | Recall | F1 | Flagged | Precision in top 10% | Lift in top 10% |
+|---|---|---|---|---|---|---|---|---|
+| 0.676 | 0.236 | 0.746 | 0.210 | 0.459 | 0.288 | 24.4% | 0.277 | 2.48 |
+
+"Flagged" is the share of test encounters whose predicted probability is at or above the threshold (0.1405).
+
+These agree closely with the cross-validated figures above (ROC-AUC 0.679, PR-AUC 0.234), so the results do not appear to be overfitted to the training data. At the chosen threshold the model flags about 24% of encounters; roughly 1 in 5 of those is readmitted within 30 days, and about 46% of all readmissions are caught. Full details are in the [model card](docs/model_card.md).
 
 ### What the numbers say
 - XGBoost is the strongest model, but only moderately: the dataset carries limited predictive signal, and the gap to logistic regression is small (about 0.016 PR-AUC, roughly four times the fold-to-fold spread).

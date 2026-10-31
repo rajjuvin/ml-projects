@@ -28,7 +28,21 @@
 ## Evaluation
 Metrics are computed on out-of-fold predictions (training data) for model comparison, and on the held-out test set once for the selected model. See the README for the comparison table. Because only about 11% of encounters are positive, accuracy is reported but not used for selection: predicting "not readmitted" for everyone already scores about 0.886. PR-AUC is computed as average precision (scikit-learn’s `average_precision_score`), which differs slightly from the trapezoidal area under the precision-recall curve.
 
-**Held-out test results:** pending (to be run once, after Phase 2 review).
+**Held-out test results (selected model: XGBoost).** Scored once, on 19,802 encounters from patients not used in training (base rate 11.2%), with the decision threshold of 0.1405 fixed beforehand from out-of-fold training predictions:
+
+| Metric | Out-of-fold (training) | Held-out test |
+|---|---|---|
+| ROC-AUC | 0.679 | 0.676 |
+| PR-AUC (random guess = base rate) | 0.234 (0.114) | 0.236 (0.112) |
+| Accuracy | 0.746 | 0.746 |
+| Precision | 0.215 | 0.210 |
+| Recall | 0.462 | 0.459 |
+| F1 | 0.294 | 0.288 |
+| Share of encounters flagged | 24.5% | 24.4% |
+| Precision in the top 10% | 0.277 | 0.277 |
+| Lift in the top 10% | 2.42 | 2.48 |
+
+The test results agree closely with the cross-validated estimates, so the comparison and the threshold do not appear to be overfitted to the training data. At this threshold about 1 in 5 flagged encounters is a true 30-day readmission, and about 46% of readmissions are caught. Intervals around these test figures have not been computed.
 
 ## Limitations and risks
 - **Modest predictive power.** Best ROC-AUC is about 0.68. The model ranks patients better than chance but misses many readmissions and flags many who are not readmitted.
