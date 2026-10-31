@@ -1,0 +1,67 @@
+name: hospital-readmission-risk release image
+
+# Runs only when a version tag such as v0.1.0 is pushed. It builds the Docker image, checks that the built image
+# really starts and scores, and only then publishes it to GitHub's container registry (ghcr.io).
+on:
+  push:
+    tags:
+      - "v*"
+
+# The job may read the repository and publish packages, nothing else.
+permissions:
+  contents: read
+  packages: write
+
+defaults:
+  run:
+    working-directory: hospital-readmission-risk
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out the version and the image name
+        run: |
+          app_version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/readmission/__init__.py)
+          if [ "$GITHUB_REF_NAME" != "v$app_version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the app version v$app_version in src/readmission/__init__.py" >&2
+            exit 1
+          fi
+          owner=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')   # registry names must be lower case
+          echo "VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "IMAGE=ghcr.io/$owner/readmission-app" >> "$GITHUB_ENV"
+
+      - name: Build the image
+        run: |
+          docker build \
+            --label org.opencontainers.image.source="https://github.com/$GITHUB_REPOSITORY" \
+            --label org.opencontainers.image.version="$VERSION" \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" \
+            -t "$IMAGE:$VERSION" -t "$IMAGE:sha-${GITHUB_SHA::7}" .
+
+      - name: Check that the built image starts and scores
+        run: |
+          docker run -d --rm --name smoke -p 8080:8080 "$IMAGE:$VERSION"
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/api/health > health.json && break
+            sleep 2
+          done
+          cat health.json; echo
+          grep -q "\"app_version\":\"$VERSION\"" health.json
+          curl -sf -X POST http://localhost:8080/api/predict-file -H "Content-Type: text/csv" \
+            --data-binary @src/readmission/web/sample_encounters.csv | grep -q '"results"'
+          docker stop smoke
+
+      - name: Log in to the GitHub container registry
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Publish the image
+        run: |
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:sha-${GITHUB_SHA::7}"
+          echo "Published $IMAGE:$VERSION (commit ${GITHUB_SHA::7})" >> "$GITHUB_STEP_SUMMARY"
