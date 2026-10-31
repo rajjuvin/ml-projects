@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest>=9
+ruff>=0.17
+# For running the exploration notebook:
+matplotlib==3.11.2
+seaborn==0.13.2
+ipykernel
