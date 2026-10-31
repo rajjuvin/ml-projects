@@ -16,6 +16,8 @@ Five models compared on the same patient-grouped, 5-fold cross-validation of the
 | Random Forest | 0.667 | 0.214 | 0.736 | 0.204 | 0.452 | 0.282 | 0.261 | 2.29 |
 | Decision Tree | 0.645 | 0.202 | 0.687 | 0.184 | 0.505 | 0.269 | 0.240 | 2.10 |
 
+Note: PR-AUC is computed as average precision (scikit-learn’s `average_precision_score`), which differs slightly from the trapezoidal area under the precision-recall curve.
+
 Accuracy, precision, recall and F1 are at each model's own decision threshold, chosen to maximize F1 on the out-of-fold predictions. Accuracy is shown for completeness but is not a useful yardstick here: predicting "not readmitted" for every encounter already scores about 0.886. The comparison relies on ranking metrics (ROC-AUC, PR-AUC) and on what a team with limited capacity would see: **flagging the 10% highest-risk encounters finds readmissions about 2.4 times as often as picking at random.**
 
 Full table: [reports/oof_comparison.csv](reports/oof_comparison.csv). The held-out test results for the selected model are pending.
@@ -59,7 +61,7 @@ python -m readmission.train --model xgboost       # trains, picks the threshold,
 - **Cohort:** inpatient encounters with a diabetes diagnosis, excluding death and hospice discharges. 101,766 encounters in the source data.
 - **Split:** 80/20 by patient, so no patient appears in both train and test. Cross-validation is grouped by patient.
 - **Preprocessing:** missing values (`?`) imputed; lab results "None" kept as an explicit `not_measured` category; one-hot encoding with rare categories pooled; numerics scaled only for logistic regression and the MLP.
-- **Tuning:** grid or randomized search with grouped cross-validation, refit on PR-AUC.
+- **Tuning:** grid or randomized search with grouped cross-validation, refit on PR-AUC. 
 - **Threshold:** maximizes F1 on out-of-fold training predictions, never on the test set.
 
 ## Roadmap
