@@ -140,7 +140,9 @@ def create_app(model_dir=None):
 
     @app.get("/api/health")
     async def health():
-        return {"status": "ok", **predictor.summary()}
+        # The versions let anyone confirm which release is live (useful after a deploy or a rollback).
+        return {"status": "ok", **predictor.summary(), "app_version": __version__,
+                "model_created_utc": predictor.metadata.get("created_at_utc")}
 
     @app.get("/api/schema")
     async def describe():

@@ -109,10 +109,10 @@ def test_changed_yes_is_allowed_without_a_dose_change(schema):
     assert schema.clean(values)[1] == []
 
 
-def test_gender_offers_female_male_other_and_not_declared(schema):
+def test_gender_offers_female_male_non_binary_other_and_not_declared(schema):
     options = [option["value"] for option in next(
         field for field in schema.describe()["choices"] if field["name"] == "gender")["options"]]
-    assert options == ["Female", "Male", "Other", "Not declared"]
+    assert options == ["Female", "Male", "Non-binary", "Other", "Not declared"]
     for value in options:
         assert schema.clean({**example_row(), "gender": value})[1] == []
     assert schema.clean({**example_row(), "gender": "Unknown/Invalid"})[1] == ["gender: not an allowed value"]

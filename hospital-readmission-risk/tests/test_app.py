@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from readmission import __version__
 from readmission.app import create_app
 from readmission.predict import DECLARATIONS, Predictor
 from readmission.schema import EXAMPLE_ENCOUNTER, MAX_ROWS, MAX_UPLOAD_BYTES
@@ -31,6 +32,7 @@ def header_and_rows():
 def test_health_and_schema(client):
     health = client.get("/api/health").json()
     assert health["status"] == "ok" and 0 < health["threshold"] < 1
+    assert health["app_version"] == __version__ and health["model_created_utc"]  # tells a deploy or rollback apart
     described = client.get("/api/schema").json()
     assert described["example"] == json.loads(json.dumps(EXAMPLE_ENCOUNTER))
     assert len(described["required_columns"]) == 22
@@ -109,7 +111,7 @@ def test_medication_answers_must_agree_with_the_listed_drugs(client):
 def test_optional_diagnoses_and_new_gender_values_can_be_scored(client):
     without = {key: value for key, value in EXAMPLE_ENCOUNTER.items() if key not in ("diag_2", "diag_3")}
     assert client.post("/api/predict", json=without).status_code == 200
-    for gender in ("Other", "Not declared"):
+    for gender in ("Non-binary", "Other", "Not declared"):
         assert client.post("/api/predict", json={**EXAMPLE_ENCOUNTER, "gender": gender}).status_code == 200
 
 
@@ -221,10 +223,11 @@ def test_example_and_sample_work_with_the_real_model():
 
 @pytest.mark.skipif(not (REAL_MODEL_DIR / "readmission_model.joblib").exists(),
                     reason="needs the trained model (local only; CI has no model file)")
-def test_other_and_not_declared_are_scored_like_the_models_rare_gender_category():
+def test_non_binary_other_and_not_declared_are_scored_like_the_models_rare_gender_category():
     predictor = Predictor.load(REAL_MODEL_DIR)
     row, _ = predictor.schema.clean({key: value for key, value in EXAMPLE_ENCOUNTER.items() if key != "medications"})
     scores = {}
-    for gender in ("Other", "Not declared", "Unknown/Invalid"):  # the last is the dataset's own rare value
+    # the last is the dataset's own rare value
+    for gender in ("Non-binary", "Other", "Not declared", "Unknown/Invalid"):
         scores[gender] = predictor.score([{**row, "gender": gender}])[0]
-    assert scores["Other"] == scores["Not declared"] == scores["Unknown/Invalid"]
+    assert scores["Non-binary"] == scores["Other"] == scores["Not declared"] == scores["Unknown/Invalid"]

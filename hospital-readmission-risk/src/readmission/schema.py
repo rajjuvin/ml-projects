@@ -53,8 +53,9 @@ HINTS = {
     "number_inpatient": "How many times was the patient admitted as an inpatient in the year before this stay?",
     "number_diagnoses": "How many diagnoses were entered for the stay?",
     "race": "Race as recorded. Choose Not recorded if it is unknown.",
-    "gender": "Gender as recorded. The model saw almost no examples of Other or Not declared, so it scores them "
-              "as a rare category.",
+    "gender": "Gender as recorded. The training data has no records for Non-binary, Other or Not declared, so these "
+              "are scored like an unknown gender, not on any pattern of their own. The model was trained on public "
+              "data to demonstrate AI/ML learning.",
     "age": "Age group of the patient at the time of the stay.",
     "weight": "Weight range in pounds. Choose Not recorded if unknown (most records have no weight).",
     "admission_type_id": "How was the patient admitted, for example as an emergency or an elective admission?",
@@ -104,8 +105,8 @@ OPTIONAL_COLUMNS = OPTIONAL_CODE_COLUMNS + config.MEDICATION_COLUMNS
 REQUIRED_COLUMNS = [col for col in config.FEATURE_COLUMNS if col not in OPTIONAL_COLUMNS]
 
 # Offered in the form and accepted in files. Female and Male are what the model learned; only 3 of the 99,343
-# eligible encounters had another value, so Other and Not declared reach the model's rare-category bucket.
-GENDER_OPTIONS = ["Female", "Male", "Other", "Not declared"]
+# eligible encounters had another value, so Non-binary, Other and Not declared reach the model's rare-category bucket.
+GENDER_OPTIONS = ["Female", "Male", "Non-binary", "Other", "Not declared"]
 
 # A fictitious encounter for the "fill with an example" button.
 EXAMPLE_ENCOUNTER = {

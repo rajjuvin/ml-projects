@@ -2,9 +2,13 @@
 data/*
 !data/README.md
 
-# Trained artifacts (see docs/model_card.md); keep the folder
+# Trained artifacts (see docs/model_card.md); keep the folder.
+# The released model and its metadata are committed (about 1 MB) so that a release is one exact code + model pair
+# and the Docker image can be built from the repository. Anything else in models/ stays local.
 models/*
 !models/.gitkeep
+!models/readmission_model.joblib
+!models/metadata.json
 
 .venv/
 __pycache__/

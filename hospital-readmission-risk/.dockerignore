@@ -1,0 +1,11 @@
+# Allow-list: nothing goes into the image unless it is named here.
+# This keeps the dataset, study notes, notebooks, tests and git history out of the image.
+*
+!requirements.txt
+!pyproject.toml
+!README.md
+!src
+!models/readmission_model.joblib
+!models/metadata.json
+**/__pycache__
+**/*.pyc
