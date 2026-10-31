@@ -86,4 +86,4 @@ Code is released under the [MIT License](../LICENSE). The dataset is licensed se
 
 ## Built with Claude Code
 
-This project was developed with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding assistant, working with the repository owner. Each phase (model evaluation, packaging, tests, CI) was reviewed and approved by the owner, and the commits carry a `Co-Authored-By: Claude` trailer.
+This project (the `hospital-readmission-risk/` folder and its CI workflow) was developed with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding assistant, working with the repository owner. Each phase (model evaluation, packaging, tests, CI) was reviewed and approved by the owner, and the commits that add or change this project carry a `Co-Authored-By: Claude` trailer. Other projects in this repository are not covered by this note.

@@ -1,6 +1,6 @@
 # ml-projects
 
-AI/ML projects, each in its own folder with its own README, tests and CI workflow. Code is MIT licensed (see [LICENSE](LICENSE)). Developed with [Claude Code](https://claude.com/claude-code).
+AI/ML projects, each in its own folder with its own README, tests and CI workflow. Code is MIT licensed (see [LICENSE](LICENSE)). Each project's README describes how that project was built.
 
 | Project | Description |
 |---|---|
