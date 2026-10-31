@@ -68,9 +68,10 @@ python -m readmission.train --model xgboost       # trains, picks the threshold,
 
 1. ✅ Model comparison (logistic regression, decision tree, random forest, XGBoost, neural network)
 2. ✅ Reproducible package, tests and CI
-3. Prediction API (FastAPI) with input validation and tests
-4. Docker packaging, live deployment, monitoring and rollback procedure
-5. Demo page and final write-up
+3. Reproducible hyperparameter tuning script, with tuned values stored in a JSON file
+4. Prediction API (FastAPI) with input validation and tests
+5. Docker packaging, live deployment, monitoring and rollback procedure
+6. Demo page and final write-up
 
 ## Data and attribution
 
