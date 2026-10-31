@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "readmission"
-version = "0.1.0"
+dynamic = ["version"]  # read from src/readmission/__init__.py, the one place the version is written
 description = "30-day hospital readmission risk prediction for diabetic inpatient encounters (retrospective prototype)"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -27,6 +27,9 @@ readmission-train = "readmission.train:main"
 readmission-compare = "readmission.compare:main"
 readmission-tune = "readmission.tune:main"
 readmission-serve = "readmission.app:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "readmission.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
