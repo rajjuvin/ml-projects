@@ -72,6 +72,23 @@ CATEGORICAL_COLUMNS = [
 
 FEATURE_COLUMNS = NUMERIC_COLUMNS + CATEGORICAL_COLUMNS
 
+# The 23 diabetes drug columns: each records whether the drug was prescribed and how its dose changed.
+MEDICATION_COLUMNS = CATEGORICAL_COLUMNS[
+    CATEGORICAL_COLUMNS.index("metformin"):CATEGORICAL_COLUMNS.index("metformin-pioglitazone") + 1
+]
+
+# Accepted range per numeric field in the web form and API: the range seen in the training data, widened a little.
+NUMERIC_LIMITS = {
+    "time_in_hospital": (1, 14),
+    "num_lab_procedures": (0, 150),
+    "num_procedures": (0, 10),
+    "num_medications": (0, 100),
+    "number_outpatient": (0, 100),
+    "number_emergency": (0, 100),
+    "number_inpatient": (0, 50),
+    "number_diagnoses": (1, 20),
+}
+
 # Columns where the literal string "None" means "test not performed" (not a missing value).
 NOT_MEASURED_REPLACEMENTS = {
     "max_glu_serum": {"None": "not_measured"},

@@ -41,7 +41,8 @@ These agree closely with the cross-validated figures above (ROC-AUC 0.679, PR-AU
 ## Project layout
 
 ```
-src/readmission/    config, data loading and splitting, preprocessing, models, evaluation, tuning, training and comparison CLIs
+src/readmission/    config, data loading and splitting, preprocessing, models, evaluation, tuning, training and comparison CLIs,
+                    and the web app (schema, predict, app, samples, web/ page and sample files)
 tests/              unit tests on synthetic data (no dataset needed)
 notebooks/          exploration, model tuning and comparison (hospreadmissionpred.ipynb)
 scripts/            download_data.py
@@ -71,6 +72,20 @@ python -m readmission.train --model xgboost       # trains, picks the threshold,
 
 `python -m readmission.train --evaluate-test` also scores the held-out test set. Run it once, after the model and threshold are final.
 
+## Web app
+
+A small web page that scores encounters with the trained model. It needs the model files in `models/` (created by `readmission.train`).
+
+```bash
+python -m readmission.app        # then open http://127.0.0.1:8000   (or the readmission-serve command)
+```
+
+- **Enter values:** a form with one field per model input, each with a short question or description. Diabetes drugs start as "No"; add a medication row only for drugs that were prescribed. The secondary and additional diagnosis codes are optional. The medication answers must agree with the listed drugs (for example, "prescribed = Yes" needs at least one drug, and a drug marked Up or Down needs "changed = Yes"), because the model never saw contradictory combinations.
+- **Upload a file:** a CSV with one row per encounter, at most 10 rows and 50 KB. The page links a sample as a plain CSV or as an Excel workbook (a "Sample data" sheet plus a "Field guide" sheet that explains every column), and lists every column with its meaning and allowed values.
+- **Result:** for each row, only the row number, a risk score, whether it is flagged (at or above the model's cutoff) and a short explanation. Nothing that was entered is shown again, and the form and file picker are cleared after every submission.
+- **Privacy by design:** requests are scored in memory. Nothing is written to disk or logged, error messages never repeat what was entered, and responses are not cacheable. The page asks users not to enter real patient information. The tests check these properties.
+- **API:** `POST /api/predict` (JSON for one encounter), `POST /api/predict-file` (CSV text), `GET /api/health` and `GET /api/schema`. The risk score is a ranking score, not a calibrated probability.
+
 ## Method summary
 
 - **Cohort:** inpatient encounters with a diabetes diagnosis, excluding death and hospice discharges. 101,766 encounters in the source data.
@@ -84,13 +99,13 @@ python -m readmission.train --model xgboost       # trains, picks the threshold,
 1. ✅ Model comparison (logistic regression, decision tree, random forest, XGBoost, neural network)
 2. ✅ Reproducible package, tests and CI
 3. ✅ Reproducible hyperparameter tuning script, with tuned values stored in a JSON file
-4. Prediction API (FastAPI) with input validation and tests
+4. ✅ Prediction API (FastAPI) and web page (form and CSV upload) with input validation and tests
 5. Docker packaging, live deployment, monitoring and rollback procedure
-6. Demo page and final write-up
+6. Final write-up
 
 ## Data and attribution
 
-This project uses the *Diabetes 130-US Hospitals for Years 1999-2008* dataset (Clore et al., 2014), provided through the UCI Machine Learning Repository and licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The associated study is described by Strack et al. (2014). The data is not redistributed here; see [data/README.md](data/README.md) for the download date, scope, changes made and how to download it.
+This project uses the *Diabetes 130-US Hospitals for Years 1999-2008* dataset (Clore et al., 2014), provided through the UCI Machine Learning Repository and licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The associated study is described by Strack et al. (2014). The data is not redistributed here; see [data/README.md](data/README.md) for the download date, scope, changes made and how to download it. The descriptions of the admission and discharge codes shown in the web form (`src/readmission/web/code_labels.json`) are taken from the dataset's `IDS_mapping.csv`.
 
 ## References
 

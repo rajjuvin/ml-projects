@@ -26,7 +26,7 @@ jobs:
           cache-dependency-path: hospital-readmission-risk/requirements.txt
       - name: Install
         run: |
-          pip install -r requirements.txt pytest ruff
+          pip install -r requirements.txt pytest ruff httpx
           pip install -e . --no-deps
       - name: Lint
         run: ruff check src tests scripts

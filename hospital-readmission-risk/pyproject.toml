@@ -14,18 +14,25 @@ dependencies = [
     "scikit-learn>=1.9",
     "xgboost>=3.4",
     "joblib>=1.6",
+    "fastapi>=0.162",
+    "uvicorn>=0.54",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9", "ruff>=0.17"]
+dev = ["pytest>=9", "ruff>=0.17", "httpx>=0.28"]
 
 [project.scripts]
 readmission-train = "readmission.train:main"
 readmission-compare = "readmission.compare:main"
 readmission-tune = "readmission.tune:main"
+readmission-serve = "readmission.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+readmission = ["web/*.html", "web/*.csv", "web/*.json", "web/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

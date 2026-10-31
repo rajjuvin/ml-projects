@@ -1,6 +1,7 @@
 -r requirements.txt
 pytest>=9
 ruff>=0.17
+httpx==0.28.1   # for the web app tests (FastAPI's TestClient)
 # For running the exploration notebook:
 matplotlib==3.11.2
 seaborn==0.13.2

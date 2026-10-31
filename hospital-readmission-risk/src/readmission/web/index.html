@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital Readmission Risk Prediction</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <header class="site-header">
+    <h1>Hospital Readmission Risk Prediction</h1>
+    <p class="tagline">AI/ML Study Project: from hospital data to a working prediction demo</p>
+    <p class="lead">Estimates the risk that a hospital stay for a patient with diabetes is followed by a readmission within 30 days, using information known at discharge. It shows how a care team could decide which discharged patients to prioritize for follow-up review.</p>
+    <p class="notice" role="note" aria-label="Important notices">{{DECLARATIONS}}</p>
+  </header>
+
+  <section id="input-view">
+    <div class="tabs" role="tablist" aria-label="How to provide the encounter">
+      <button type="button" role="tab" id="tab-form" aria-selected="true" aria-controls="form-panel">Enter values</button>
+      <button type="button" role="tab" id="tab-file" aria-selected="false" aria-controls="file-panel">Upload a file</button>
+    </div>
+
+    <div id="form-panel" role="tabpanel" aria-labelledby="tab-form">
+      <form id="encounter-form" autocomplete="off">
+        <div id="form-fields"></div>
+        <div class="section" id="medication-group" role="group" aria-labelledby="medication-title">
+          <h3 id="medication-title">Diabetes medications</h3>
+          <p class="hint" id="medication-hint"></p>
+          <div id="medication-rows"></div>
+          <button type="button" id="add-medication" class="secondary">Add another medication</button>
+        </div>
+        <div id="form-errors" class="errors" role="alert" hidden></div>
+        <div class="actions">
+          <button type="button" id="fill-example" class="secondary">Fill with an example</button>
+          <button type="submit">Get risk score</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="file-panel" role="tabpanel" aria-labelledby="tab-file" hidden>
+      <h2>Upload a CSV file</h2>
+      <ol class="steps">
+        <li>Download a sample with three made-up encounters: <a href="/sample.xlsx" download>Excel workbook</a> (a "Sample data" sheet plus a "Field guide" sheet explaining every column) or <a href="/sample.csv" download>plain CSV</a>.</li>
+        <li>Keep the first row (the column names). Replace or add rows with made-up values. <span id="limit-text"></span></li>
+        <li>Save as CSV (from the workbook, save the "Sample data" sheet), choose the file below, and press the button.</li>
+      </ol>
+      <details>
+        <summary>Column guide</summary>
+        <p class="hint">Required columns must be present. Medication columns are optional and default to "No". The dataset's own markers "?" (not recorded) and "None" (not measured) are accepted.</p>
+        <div id="column-guide"></div>
+      </details>
+      <form id="file-form" autocomplete="off">
+        <label for="file-input">CSV file</label>
+        <input type="file" id="file-input" accept=".csv,text/csv" required>
+        <div id="file-errors" class="errors" role="alert" hidden></div>
+        <div class="actions"><button type="submit">Get risk scores</button></div>
+      </form>
+    </div>
+  </section>
+
+  <section id="result-view" hidden aria-live="polite">
+    <h2 id="result-heading" tabindex="-1">Result</h2>
+    <table id="result-table">
+      <thead><tr><th scope="col">Row</th><th scope="col">Risk score</th><th scope="col">Result</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <ul id="result-notes" class="notes"></ul>
+    <div class="actions"><button type="button" id="new-prediction">Start a new prediction</button></div>
+  </section>
+
+  <footer>
+    <p>Hospital Readmission Risk Prediction, built on the <a href="https://doi.org/10.24432/C5230J">Diabetes 130-US Hospitals (1999-2008)</a> dataset (CC BY 4.0). <span id="model-text"></span></p>
+  </footer>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

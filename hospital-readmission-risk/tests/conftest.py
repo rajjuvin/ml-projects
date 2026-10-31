@@ -49,6 +49,20 @@ def make_frame(n=800, seed=0, n_patients=500, raw=False):
     return df
 
 
+@pytest.fixture(scope="session")
+def model_dir(tmp_path_factory):
+    """A small logistic-regression model trained on synthetic data, saved the way readmission.train saves one."""
+    from readmission.data import DATA_FILE
+    from readmission.train import train
+
+    root = tmp_path_factory.mktemp("trained")
+    make_frame(raw=True).to_csv(root / DATA_FILE, index=False)
+    with pytest.MonkeyPatch.context() as patch:
+        patch.chdir(root)  # so a reports/best_params.json in the repo is not picked up
+        train(root, "logistic_regression", root / "models")
+    return root / "models"
+
+
 @pytest.fixture
 def write_params_file():
     """Function writing a best_params.json that holds {model_key: {parameter: value}}, as readmission.tune does."""
