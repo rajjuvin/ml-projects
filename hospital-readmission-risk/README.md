@@ -2,7 +2,7 @@
 
 Estimates the probability that a diabetic inpatient encounter is followed by a hospital readmission **in under 30 days**, using information assumed available at discharge. The demonstration simulates helping a care-coordination team decide which discharged patients to prioritize for follow-up review.
 
-> **Retrospective engineering prototype, not a clinically validated tool.** It uses 1999-2008 data, does not recommend treatment, and must not be used to decide who receives care. See the [model card](docs/model_card.md).
+> **Retrospective engineering prototype, not a clinically validated tool.** It uses 1999-2008 data, does not recommend treatment, and must not be used to decide who receives care. See the [model card](docs/model_card.md), and the [project report](docs/PROJECT_REPORT.md) for the whole story from question to live service.
 
 ## Results so far
 
@@ -46,7 +46,7 @@ src/readmission/    config, data loading and splitting, preprocessing, models, e
 tests/              unit tests on synthetic data (no dataset needed)
 notebooks/          exploration, model tuning and comparison (hospreadmissionpred.ipynb)
 scripts/            download_data.py
-docs/               model card
+docs/               model card, project report and its figures (docs/figures, drawn by scripts/make_figures.py)
 reports/            saved comparison table, tuned hyperparameters (best_params.json) and the test-set analysis (test_analysis.json)
 data/, models/      downloaded data and trained artifacts (not committed)
 ```
@@ -157,7 +157,7 @@ The rollback and both off switches were each tried once on the live service.
 3. ✅ Reproducible hyperparameter tuning script, with tuned values stored in a JSON file
 4. ✅ Prediction API (FastAPI) and web page (form and CSV upload) with input validation and tests
 5. ✅ Docker packaging, live deployment on Google Cloud Run, usage totals and a rollback procedure
-6. Final write-up
+6. ✅ Final write-up: the [project report](docs/PROJECT_REPORT.md), with intervals, results by group and calibration (`python -m readmission.analyze`)
 
 ## Data and attribution
 
