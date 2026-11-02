@@ -23,7 +23,7 @@
 ## Model
 - Preprocessing: `"?"` treated as missing and imputed (median for numerics, an explicit `not_recorded` category for categoricals), lab "None" values kept as `not_measured`, one-hot encoding with rare categories pooled.
 - Candidates: logistic regression, decision tree, random forest, XGBoost, MLP. Hyperparameters were tuned with patient-grouped cross-validation, selecting on PR-AUC. The search spaces and winning values can be reproduced with `python -m readmission.tune` and are recorded in `reports/best_params.json`.
-- Decision threshold: chosen to maximize F1 on out-of-fold training predictions (never on the test set).
+- Decision threshold: chosen to maximize F1 on out-of-fold training predictions (never on the test set). For the current model it is 0.1405.
 
 ## Evaluation
 Metrics are computed on out-of-fold predictions (training data) for model comparison, and on the held-out test set once for the selected model. See the README for the comparison table. Because only about 11% of encounters are positive, accuracy is reported but not used for selection: predicting "not readmitted" for everyone already scores about 0.886. PR-AUC is computed as average precision (scikit-learn’s `average_precision_score`), which differs slightly from the trapezoidal area under the precision-recall curve.

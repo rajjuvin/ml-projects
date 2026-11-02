@@ -48,7 +48,7 @@ flowchart LR
 
 ![PR-AUC of five models](figures/model_comparison.png)
 
-XGBoost is the strongest model, but the differences are small. Its lead over logistic regression is about 0.016 PR-AUC, roughly four times the fold-to-fold spread, so it is real but not large. The dataset carries limited predictive signal, and no model changes that.
+XGBoost is the strongest model, but the differences are small. Its lead over logistic regression is about 0.016 PR-AUC. The available data carries limited predictive signal.
 
 **On the held-out test set** the figures agree closely with cross-validation (ROC-AUC 0.679 and PR-AUC 0.234 in cross-validation, against 0.676 and 0.236), so the choices do not look overfitted. The intervals are in the summary above. The full table is in the [model card](model_card.md).
 
@@ -85,7 +85,7 @@ flowchart LR
 ```
 
 - **Package and tests.** The code lives in an installable package with 111 automated tests that need no real data (they run on synthetic encounters), plus lint. Every push runs them on a clean machine.
-- **Web app.** One page scores a single encounter from a form or up to 10 rows from a CSV. Inputs are validated field by field, and error messages name the column but never repeat what was typed. The page asks users not to enter real patient information.
+- **Web app.** One page scores a single encounter from a form or up to 10 rows from a CSV. Inputs are validated field by field, and error messages name the field or row but do not repeat a value that was entered. The one exception is text entered where a column heading is expected and not recognized, which is shown back shortened to 40 characters so it can be corrected. The page asks users not to enter real patient information.
 - **Privacy by design.** Requests are scored in memory and nothing is stored. The app logs no request data and its responses omit the inputs. The one log line names the kind of an unexpected error and never its message, which could contain submitted values. Tests check these properties. The hosting platform keeps its own request log (time, visitor address, browser and result code), which the app cannot switch off, and the model card says so.
 - **Docker image.** The app and the model are packaged together (about 160 MB compressed), run as an ordinary user and use the CPU-only XGBoost build. Committing the model file means a release is one exact code-and-model pair.
 - **Releases.** Pushing a tag such as `v0.2.1` starts a workflow that checks the tag matches the version in the code, builds the image, starts it, scores a sample and only then publishes it to GitHub's container registry. The version is written in one place only.

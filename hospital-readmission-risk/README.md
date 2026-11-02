@@ -35,7 +35,7 @@ After the model, settings and threshold were fixed, XGBoost was scored once on t
 These agree closely with the cross-validated figures above (ROC-AUC 0.679, PR-AUC 0.234), so the results do not appear to be overfitted to the training data. At the chosen threshold the model flags about 24% of encounters; roughly 1 in 5 of those is readmitted within 30 days, and about 46% of all readmissions are caught. With 95% intervals from resampling patients, ROC-AUC is 0.676 (0.660 to 0.690), precision 0.210 (0.194 to 0.223) and recall 0.459 (0.430 to 0.485). In each tenth of the test set the average score is close to the observed readmission rate, so the scores are approximately calibrated on this split. Performance does differ between groups, for example by age, and the model card lists them. `python -m readmission.analyze` reproduces all of this. Full details are in the [model card](docs/model_card.md).
 
 ### What the numbers say
-- XGBoost is the strongest model, but only moderately: the dataset carries limited predictive signal, and the gap to logistic regression is small (about 0.016 PR-AUC, roughly four times the fold-to-fold spread).
+- XGBoost is the strongest model, but the differences are small: its lead over logistic regression is about 0.016 PR-AUC. The available data carries limited predictive signal.
 - A default 0.5 probability cutoff is useless with this class balance (the tuned Random Forest never exceeds a predicted probability of 0.3, giving a precision of 0), which is why thresholds are chosen from out-of-fold predictions.
 
 ## Project layout
@@ -48,7 +48,9 @@ notebooks/          exploration, model tuning and comparison (hospreadmissionpre
 scripts/            download_data.py
 docs/               model card, project report and its figures (docs/figures, drawn by scripts/make_figures.py)
 reports/            saved comparison table, tuned hyperparameters (best_params.json) and the test-set analysis (test_analysis.json)
-data/, models/      downloaded data and trained artifacts (not committed)
+data/               the downloaded dataset (not committed)
+models/             the trained model and its metadata (readmission_model.joblib, metadata.json), committed so a release is
+                    one exact code-and-model pair; `readmission.train` recreates them
 ```
 
 ## Quickstart
@@ -75,7 +77,7 @@ python -m readmission.analyze                     # test-set intervals, results 
 
 ## Web app
 
-A small web page that scores encounters with the trained model. It needs the model files in `models/` (created by `readmission.train`).
+A small web page that scores encounters with the trained model. It needs the trained model files in `models/`, which are included in the repository (`readmission.train` recreates them). A `.joblib` file is a Python pickle, so only load model files you trained yourself or took from this repository.
 
 ```bash
 python -m readmission.app        # then open http://127.0.0.1:8000   (or the readmission-serve command)
@@ -84,7 +86,7 @@ python -m readmission.app        # then open http://127.0.0.1:8000   (or the rea
 - **Enter values:** a form with one field per model input, each with a short question or description. Diabetes drugs start as "No"; add a medication row only for drugs that were prescribed. The secondary and additional diagnosis codes are optional. The medication answers must agree with the listed drugs (for example, "prescribed = Yes" needs at least one drug, and a drug marked Up or Down needs "changed = Yes"), because the model never saw contradictory combinations.
 - **Upload a file:** a CSV with one row per encounter, at most 10 rows and 50 KB. The page links a sample as a plain CSV or as an Excel workbook (a "Sample data" sheet plus a "Field guide" sheet that explains every column), and lists every column with its meaning and allowed values.
 - **Result:** for each row, only the row number, a risk score, whether it is flagged (at or above the model's cutoff) and a short explanation. Nothing that was entered is shown again, and the form and file picker are cleared after every submission.
-- **Privacy by design:** requests are scored in memory. Nothing is written to disk and no request data is logged, error messages never repeat what was entered, and responses are not cacheable. The page asks users not to enter real patient information. The tests check these properties.
+- **Privacy by design:** requests are scored in memory. Nothing is written to disk and no request data is logged, and responses are not cacheable. Error messages name the problem field or row but do not repeat a value that was entered, with one exception: if text is entered where a column heading is expected (in an uploaded file), or where a field or medication name is expected (in a direct API request), and it is not recognized, it is shown back shortened to 40 characters so it can be corrected. This can include an actual value, for example when a file has no heading row. None of this is stored or logged. The page asks users not to enter real patient information. The tests check these properties.
 - **API:** `POST /api/predict` (JSON for one encounter), `POST /api/predict-file` (CSV text), `GET /api/health`, `GET /api/schema` and `GET /api/stats`. The page presents the risk score as a ranking score, not an exact chance; on the held-out test set the scores were close to the observed rates (see the model card), but that was checked on one split only.
 - **Usage totals:** `GET /api/stats` shows running totals since the instance started: encounters scored, how many were flagged, inputs rejected and unexpected errors. They are counts only (nothing about any single request is kept) and start again from zero on a restart.
 - **Notice mode:** set the environment variable `READMISSION_NOTICE` to a sentence and the page shows it instead of the form, while scoring answers 503 with it. `GET /api/health` stays healthy and reports `"mode": "notice"`. Unset the variable to return to normal.
@@ -148,7 +150,7 @@ The rollback and both off switches were each tried once on the live service.
 - **Split:** 80/20 by patient, so no patient appears in both train and test. Cross-validation is grouped by patient.
 - **Preprocessing:** missing values (`?`) imputed; lab results "None" kept as an explicit `not_measured` category; one-hot encoding with rare categories pooled; numerics scaled only for logistic regression and the MLP.
 - **Tuning:** exhaustive grid search (30 random candidates for XGBoost) with patient-grouped cross-validation, selecting on PR-AUC (average precision). `python -m readmission.tune` runs it and saves the winners, with their CV scores and the data fingerprint, to `reports/best_params.json`.
-- **Threshold:** maximizes F1 on out-of-fold training predictions, never on the test set.
+- **Threshold:** maximizes F1 on out-of-fold training predictions, never on the test set. For the current model it is 0.1405: an encounter scoring at or above it is flagged (about 24% of encounters). It is far below the usual 0.5 because only about 11% of encounters are readmitted.
 
 ## Roadmap
 
