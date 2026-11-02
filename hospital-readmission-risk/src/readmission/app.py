@@ -3,9 +3,16 @@
     python -m readmission.app                   # then open http://127.0.0.1:8000
     uvicorn --factory readmission.app:create_app
 
-Privacy by design: requests are scored in memory and nothing is written to disk or logged. Responses carry
+Privacy by design: requests are scored in memory, nothing is written to disk and no request data is logged
+(the only log line names the kind of an unexpected error, never its message). Responses carry
 only the row number, risk score, flag and explanatory text, never the submitted values, and error messages
 name the problem column but never repeat what was entered.
+
+Two operating aids, neither of which records anything about a request:
+- /api/stats shows running totals (encounters scored, how many were flagged, rejected inputs, unexpected
+  errors) since this instance started. They are counts only and start again from zero on a restart.
+- Notice mode: set the environment variable READMISSION_NOTICE to a sentence and the page shows it instead
+  of the form, and scoring answers 503 with it. Unset the variable to return to normal.
 """
 
 import argparse
@@ -13,7 +20,9 @@ import csv
 import html
 import io
 import json
+import logging
 import os
+from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 
@@ -27,7 +36,59 @@ from readmission.samples import build_sample_workbook
 from readmission.schema import MAX_JSON_BYTES, MAX_ROWS, MAX_UPLOAD_BYTES, REQUIRED_COLUMNS
 
 MAX_REPORTED_ERRORS = 20
+MAX_NOTICE_CHARS = 500
 XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+logger = logging.getLogger("readmission")
+
+NOTICE_PAGE = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hospital Readmission Risk Prediction</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <header class="site-header">
+    <h1>Hospital Readmission Risk Prediction</h1>
+    <p class="tagline">AI/ML Study Project: from hospital data to a working prediction demo</p>
+    <p class="notice" role="note">{notice}</p>
+  </header>
+</main>
+</body>
+</html>
+"""
+
+
+class UsageCounts:
+    """Running totals since this instance started. Counts only: nothing about any single request is kept."""
+
+    def __init__(self):
+        self.since = datetime.now(UTC)
+        self.requests_scored = 0
+        self.encounters_scored = 0
+        self.encounters_flagged = 0
+        self.inputs_rejected = 0
+        self.unexpected_errors = 0
+
+    def scored(self, results):
+        self.requests_scored += 1
+        self.encounters_scored += len(results)
+        self.encounters_flagged += sum(1 for result in results if result["flagged"])
+
+    def summary(self):
+        share = self.encounters_flagged / self.encounters_scored if self.encounters_scored else None
+        return {
+            "since_utc": self.since.isoformat(timespec="seconds"),
+            "requests_scored": self.requests_scored,
+            "encounters_scored": self.encounters_scored,
+            "encounters_flagged": self.encounters_flagged,
+            "flagged_share": None if share is None else round(share, 4),
+            "inputs_rejected": self.inputs_rejected,
+            "unexpected_errors": self.unexpected_errors,
+        }
 
 
 class InputError(Exception):
@@ -90,8 +151,11 @@ def render_declarations():
     return " ".join(parts)
 
 
-def create_app(model_dir=None):
+def create_app(model_dir=None, notice=None):
+    """The web app. `notice` (default: the READMISSION_NOTICE variable) switches on notice mode when non-empty."""
     predictor = Predictor.load(model_dir or os.environ.get("READMISSION_MODEL_DIR", "models"))
+    notice = (os.environ.get("READMISSION_NOTICE", "") if notice is None else notice).strip()[:MAX_NOTICE_CHARS]
+    counts = UsageCounts()
     web_dir = Path(str(resources.files("readmission") / "web"))
     # The declarations are written into the page itself, so every view shows them even before scripts run.
     page_html = (web_dir / "index.html").read_text(encoding="utf-8").replace(
@@ -103,7 +167,15 @@ def create_app(model_dir=None):
 
     @app.middleware("http")
     async def privacy_headers(request, call_next):
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as error:
+            # Answered here, not in an exception handler: Starlette re-raises after a handler runs, and the
+            # server would then log the full traceback, whose error message can contain submitted values.
+            counts.unexpected_errors += 1
+            logger.error("ERROR unexpected error while scoring: %s", type(error).__name__)
+            response = JSONResponse({"errors": ["Something went wrong while scoring. Nothing was stored."]},
+                                    status_code=500)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
@@ -112,21 +184,24 @@ def create_app(model_dir=None):
 
     @app.exception_handler(InputError)
     async def input_error(request, error):
+        counts.inputs_rejected += 1
         return JSONResponse({"errors": error.errors}, status_code=error.status)
-
-    @app.exception_handler(Exception)
-    async def unexpected_error(request, error):
-        return JSONResponse({"errors": ["Something went wrong while scoring. Nothing was stored."]},
-                            status_code=500)
 
     def respond(rows):
         scores = predictor.score(rows)
-        return {"results": [predictor.result(number, score) for number, score in enumerate(scores, start=1)],
-                "notes": predictor.notes(), "declarations": DECLARATIONS, "model": predictor.summary()}
+        results = [predictor.result(number, score) for number, score in enumerate(scores, start=1)]
+        counts.scored(results)
+        return {"results": results, "notes": predictor.notes(), "declarations": DECLARATIONS,
+                "model": predictor.summary()}
+
+    def paused():
+        """The 503 answer for scoring requests while notice mode is on, otherwise None."""
+        if notice:
+            return JSONResponse({"errors": [notice]}, status_code=503)
 
     @app.get("/", include_in_schema=False)
     async def page():
-        return HTMLResponse(page_html)
+        return HTMLResponse(NOTICE_PAGE.format(notice=html.escape(notice)) if notice else page_html)
 
     @app.get("/sample.csv", include_in_schema=False)
     async def sample():
@@ -142,7 +217,12 @@ def create_app(model_dir=None):
     async def health():
         # The versions let anyone confirm which release is live (useful after a deploy or a rollback).
         return {"status": "ok", **predictor.summary(), "app_version": __version__,
-                "model_created_utc": predictor.metadata.get("created_at_utc")}
+                "model_created_utc": predictor.metadata.get("created_at_utc"),
+                "mode": "notice" if notice else "normal"}
+
+    @app.get("/api/stats")
+    async def stats():
+        return counts.summary()
 
     @app.get("/api/schema")
     async def describe():
@@ -150,6 +230,8 @@ def create_app(model_dir=None):
 
     @app.post("/api/predict")
     async def predict(request: Request):
+        if response := paused():
+            return response
         try:
             payload = json.loads(await read_body(request, MAX_JSON_BYTES))
         except ValueError:
@@ -169,6 +251,8 @@ def create_app(model_dir=None):
 
     @app.post("/api/predict-file")
     async def predict_file(request: Request):
+        if response := paused():
+            return response
         rows, errors = [], []
         for number, raw in enumerate(parse_csv(await read_body(request, MAX_UPLOAD_BYTES)), start=1):
             if None in raw or None in raw.values():

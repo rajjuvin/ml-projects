@@ -33,6 +33,7 @@ def test_health_and_schema(client):
     health = client.get("/api/health").json()
     assert health["status"] == "ok" and 0 < health["threshold"] < 1
     assert health["app_version"] == __version__ and health["model_created_utc"]  # tells a deploy or rollback apart
+    assert health["mode"] == "normal"
     described = client.get("/api/schema").json()
     assert described["example"] == json.loads(json.dumps(EXAMPLE_ENCOUNTER))
     assert len(described["required_columns"]) == 22
@@ -199,6 +200,75 @@ def test_unexpected_errors_give_a_generic_message(model_dir, monkeypatch):
     client = TestClient(create_app(model_dir), raise_server_exceptions=False)
     response = client.post("/api/predict", json=EXAMPLE_ENCOUNTER)
     assert response.status_code == 500 and SECRET not in response.text
+
+
+def test_an_unexpected_error_is_logged_by_kind_only(model_dir, monkeypatch, caplog):
+    def explode(self, rows):
+        raise RuntimeError(SECRET)
+
+    monkeypatch.setattr(Predictor, "score", explode)
+    client = TestClient(create_app(model_dir), raise_server_exceptions=False)
+    client.post("/api/predict", json=EXAMPLE_ENCOUNTER)  # the error message itself carries the secret
+    assert "ERROR unexpected error while scoring: RuntimeError" in caplog.text
+    assert SECRET not in caplog.text and "Traceback" not in caplog.text
+
+
+def test_stats_start_at_zero_and_count_only_totals(model_dir):
+    client = TestClient(create_app(model_dir), raise_server_exceptions=False)
+    start = client.get("/api/stats").json()
+    assert set(start) == {"since_utc", "requests_scored", "encounters_scored", "encounters_flagged",
+                          "flagged_share", "inputs_rejected", "unexpected_errors"}
+    assert start["requests_scored"] == start["encounters_scored"] == start["inputs_rejected"] == 0
+    assert start["flagged_share"] is None
+
+    client.post("/api/predict", json=EXAMPLE_ENCOUNTER)
+    post_file(client, SAMPLE)
+    client.post("/api/predict", json={**EXAMPLE_ENCOUNTER, "age": SECRET})  # rejected, not scored
+    totals = client.get("/api/stats").json()
+    assert totals["requests_scored"] == 2 and totals["encounters_scored"] == 4
+    assert totals["inputs_rejected"] == 1 and totals["unexpected_errors"] == 0
+    assert 0 <= totals["encounters_flagged"] <= 4
+    assert totals["flagged_share"] == round(totals["encounters_flagged"] / 4, 4)
+    assert SECRET not in json.dumps(totals) and "Caucasian" not in json.dumps(totals)
+    assert client.get("/api/stats").headers["cache-control"] == "no-store"
+
+
+def test_stats_count_flags_and_unexpected_errors(model_dir, monkeypatch):
+    client = TestClient(create_app(model_dir), raise_server_exceptions=False)
+    monkeypatch.setattr(Predictor, "result", lambda self, number, score: {"row": number, "flagged": True})
+    client.post("/api/predict", json=EXAMPLE_ENCOUNTER)
+    assert client.get("/api/stats").json()["flagged_share"] == 1.0
+
+    def explode(self, rows):
+        raise RuntimeError("x")
+
+    monkeypatch.setattr(Predictor, "score", explode)
+    client.post("/api/predict", json=EXAMPLE_ENCOUNTER)
+    assert client.get("/api/stats").json()["unexpected_errors"] == 1
+
+
+def test_notice_mode_replaces_the_page_and_pauses_scoring(model_dir):
+    statement = "Paused for <maintenance> until Monday."
+    client = TestClient(create_app(model_dir, notice=statement), raise_server_exceptions=False)
+    page = client.get("/")
+    assert page.status_code == 200 and "Paused for &lt;maintenance&gt; until Monday." in page.text
+    assert "<maintenance>" not in page.text and "encounter-form" not in page.text
+    assert client.post("/api/predict", json=EXAMPLE_ENCOUNTER).json() == {"errors": [statement]}
+    assert client.post("/api/predict", json=EXAMPLE_ENCOUNTER).status_code == 503
+    assert post_file(client, SAMPLE).status_code == 503
+    health = client.get("/api/health")
+    assert health.status_code == 200 and health.json()["mode"] == "notice"  # still healthy, so no restart loop
+    stats = client.get("/api/stats").json()
+    assert stats["requests_scored"] == 0 and stats["inputs_rejected"] == 0  # a paused request is not counted
+
+
+def test_notice_mode_comes_from_the_environment_and_ends_when_unset(model_dir, monkeypatch):
+    monkeypatch.setenv("READMISSION_NOTICE", "  Back soon.  ")
+    assert TestClient(create_app(model_dir)).get("/api/health").json()["mode"] == "notice"
+    monkeypatch.setenv("READMISSION_NOTICE", "   ")
+    client = TestClient(create_app(model_dir))
+    assert client.get("/api/health").json()["mode"] == "normal"
+    assert client.post("/api/predict", json=EXAMPLE_ENCOUNTER).status_code == 200
 
 
 def test_flag_depends_on_the_threshold(model_dir):

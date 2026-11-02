@@ -83,8 +83,11 @@ python -m readmission.app        # then open http://127.0.0.1:8000   (or the rea
 - **Enter values:** a form with one field per model input, each with a short question or description. Diabetes drugs start as "No"; add a medication row only for drugs that were prescribed. The secondary and additional diagnosis codes are optional. The medication answers must agree with the listed drugs (for example, "prescribed = Yes" needs at least one drug, and a drug marked Up or Down needs "changed = Yes"), because the model never saw contradictory combinations.
 - **Upload a file:** a CSV with one row per encounter, at most 10 rows and 50 KB. The page links a sample as a plain CSV or as an Excel workbook (a "Sample data" sheet plus a "Field guide" sheet that explains every column), and lists every column with its meaning and allowed values.
 - **Result:** for each row, only the row number, a risk score, whether it is flagged (at or above the model's cutoff) and a short explanation. Nothing that was entered is shown again, and the form and file picker are cleared after every submission.
-- **Privacy by design:** requests are scored in memory. Nothing is written to disk or logged, error messages never repeat what was entered, and responses are not cacheable. The page asks users not to enter real patient information. The tests check these properties.
-- **API:** `POST /api/predict` (JSON for one encounter), `POST /api/predict-file` (CSV text), `GET /api/health` and `GET /api/schema`. The risk score is a ranking score, not a calibrated probability.
+- **Privacy by design:** requests are scored in memory. Nothing is written to disk and no request data is logged, error messages never repeat what was entered, and responses are not cacheable. The page asks users not to enter real patient information. The tests check these properties.
+- **API:** `POST /api/predict` (JSON for one encounter), `POST /api/predict-file` (CSV text), `GET /api/health`, `GET /api/schema` and `GET /api/stats`. The risk score is a ranking score, not a calibrated probability.
+- **Usage totals:** `GET /api/stats` shows running totals since the instance started: encounters scored, how many were flagged, inputs rejected and unexpected errors. They are counts only (nothing about any single request is kept) and start again from zero on a restart.
+- **Notice mode:** set the environment variable `READMISSION_NOTICE` to a sentence and the page shows it instead of the form, while scoring answers 503 with it. `GET /api/health` stays healthy and reports `"mode": "notice"`. Unset the variable to return to normal.
+- **Logging:** an unexpected error is logged as one line naming only the kind of error (never its message, which could contain submitted values). Nothing else about a request is logged by the app. A hosting platform keeps its own request log; see the model card.
 
 ## Docker
 
@@ -97,7 +100,7 @@ docker run --rm -p 8080:8080 readmission-app      # then open http://localhost:8
 
 - The image is Linux-based and about 0.7 GB. The server runs as an ordinary user (not root) and listens on the port named by the `PORT` variable (8080 by default).
 - The libraries are installed at the pinned versions in `requirements.txt`, with `xgboost-cpu` (the same release without the large GPU libraries) in place of `xgboost`. To build with the standard package instead, add `--build-arg XGBOOST_PACKAGE=xgboost`; the app itself would also need a change to ask XGBoost for a GPU, since the model is set up for the CPU.
-- `GET /api/health` returns `status`, the model name and cutoff, the app version and when the model was created. The image's health check calls it.
+- `GET /api/health` returns `status`, the model name and cutoff, the app version, when the model was created and the mode (`normal` or `notice`). The image's health check calls it.
 - `.dockerignore` is an allow-list: only the code, the pinned requirements and the two model files enter the image, never the dataset, notes or tests.
 
 ## Method summary
