@@ -178,6 +178,30 @@ def test_file_rows_with_the_wrong_number_of_values_are_rejected(client):
     ]
 
 
+def test_an_unrecognised_heading_is_shown_back_shortened_and_never_logged(client, caplog):
+    header, rows = header_and_rows()
+    long_heading = "H" * 40 + "TAIL"
+    heading_row = ",".join(long_heading if name == "age" else name for name in header.split(","))
+    response = post_file(client, "\n".join([heading_row, *rows]))
+    assert response.status_code == 422
+    assert response.json()["errors"] == ["Unknown columns: " + "H" * 40 + ".", "Missing columns: age."]
+    assert "TAIL" not in response.text and "H" * 40 not in caplog.text
+    # a file without its heading row has its first row read as headings: shown back the same way, never scored
+    no_heading = post_file(client, rows[0])
+    assert no_heading.status_code == 422
+    assert any(error.startswith("Unknown columns:") for error in no_heading.json()["errors"])
+
+
+def test_a_spreadsheet_is_refused_with_a_clear_message_not_a_server_error(model_dir):
+    client = TestClient(create_app(model_dir), raise_server_exceptions=False)
+    spreadsheet = client.get("/sample.xlsx").content.decode("utf-8", errors="replace")  # as the page sends it
+    for text in (spreadsheet, "time_in_hospital,x\rfoo\n"):
+        response = post_file(client, text)
+        assert response.status_code == 400
+        assert response.json()["errors"][0].startswith("The file could not be read as a CSV")
+    assert client.get("/api/stats").json()["unexpected_errors"] == 0  # a wrong file is the user's mistake
+
+
 def test_a_file_that_is_not_text_is_rejected(client):
     response = client.post("/api/predict-file", content=b"\xff\xfe\x00\x01", headers={"Content-Type": "text/csv"})
     assert response.status_code == 400

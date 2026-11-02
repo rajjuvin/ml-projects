@@ -1,8 +1,8 @@
 """The model's inputs: allowed values, labels and validation, shared by the web form and the API.
 
 Allowed values for the categorical fields are read from the trained model itself (the categories its
-one-hot encoder saw), so the form and the model cannot drift apart. Error messages name the column but
-never repeat what the user entered.
+one-hot encoder saw), so the form and the model cannot drift apart. Error messages name the column but do
+not repeat a value the user entered (an unrecognized field name is shown back, shortened to 40 characters).
 """
 
 import json

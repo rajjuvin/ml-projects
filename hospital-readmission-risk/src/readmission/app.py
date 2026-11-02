@@ -5,8 +5,10 @@
 
 Privacy by design: requests are scored in memory, nothing is written to disk and no request data is logged
 (the only log line names the kind of an unexpected error, never its message). Responses carry
-only the row number, risk score, flag and explanatory text, never the submitted values, and error messages
-name the problem column but never repeat what was entered.
+only the row number, risk score, flag and explanatory text, never the submitted values. Error messages name
+the problem field or row but do not repeat a value that was entered. The one exception is text entered where
+a column heading, field name or medication name is expected and not recognized: it is shown back, shortened
+to 40 characters, so it can be corrected (it is never stored or logged).
 
 Two operating aids, neither of which records anything about a request:
 - /api/stats shows running totals (encounters scored, how many were flagged, rejected inputs, unexpected
@@ -118,6 +120,14 @@ def parse_csv(body):
         text = body.decode("utf-8-sig")
     except UnicodeDecodeError:
         raise InputError(400, ["The file must be a UTF-8 text (CSV) file."]) from None
+    try:
+        return read_rows(text)
+    except csv.Error:  # for example a spreadsheet (.xlsx) chosen instead of a CSV: not text the reader can split
+        raise InputError(400, ["The file could not be read as a CSV. Save it as a comma-separated CSV file "
+                               "(UTF-8) and try again."]) from None
+
+
+def read_rows(text):
     reader = csv.DictReader(io.StringIO(text))
     header = [config.COLUMN_RENAMES.get(name, name) for name in (reader.fieldnames or [])]
     if not header:
@@ -171,7 +181,8 @@ def create_app(model_dir=None, notice=None):
             response = await call_next(request)
         except Exception as error:
             # Answered here, not in an exception handler: Starlette re-raises after a handler runs, and the
-            # server would then log the full traceback, whose error message can contain submitted values.
+            # server would then log the full traceback, whose message comes from a library, not from our own
+            # validation, and can contain submitted values.
             counts.unexpected_errors += 1
             logger.error("ERROR unexpected error while scoring: %s", type(error).__name__)
             response = JSONResponse({"errors": ["Something went wrong while scoring. Nothing was stored."]},
