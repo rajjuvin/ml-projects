@@ -1,0 +1,309 @@
+{
+  "created_at_utc": "2026-11-02T08:34:47+00:00",
+  "package_version": "0.2.1",
+  "model_name": "XGBoost",
+  "threshold": 0.14054816961288452,
+  "n_test_encounters": 19802,
+  "n_test_patients": 13998,
+  "matches_saved_test_metrics": true,
+  "interval": {
+    "level": 0.95,
+    "method": "bootstrap over patients",
+    "resamples": 1000,
+    "seed": 42
+  },
+  "metrics": {
+    "ROC-AUC": {
+      "estimate": 0.6759169020237217,
+      "lower": 0.6599369689159686,
+      "upper": 0.6903805072245552
+    },
+    "PR-AUC": {
+      "estimate": 0.23614911790625231,
+      "lower": 0.21255139969085388,
+      "upper": 0.2578400589168058
+    },
+    "Flagged@Threshold": {
+      "estimate": 0.24447025552974447,
+      "lower": 0.236345984006755,
+      "upper": 0.25268632770649974
+    },
+    "Precision@Threshold": {
+      "estimate": 0.2098739929766577,
+      "lower": 0.19448789614105857,
+      "upper": 0.22348544255607647
+    },
+    "Recall@Threshold": {
+      "estimate": 0.4584837545126354,
+      "lower": 0.4300747895194998,
+      "upper": 0.48519772083660306
+    },
+    "Lift@Top10%": {
+      "estimate": 2.477687069248441,
+      "lower": 2.26587856860249,
+      "upper": 2.6793062316270024
+    }
+  },
+  "groups": {
+    "age": [
+      {
+        "group": "[0-10)",
+        "encounters": 29,
+        "positives": 1,
+        "base_rate": null,
+        "flagged_share": null,
+        "precision": null,
+        "recall": null,
+        "roc_auc": null
+      },
+      {
+        "group": "[10-20)",
+        "encounters": 138,
+        "positives": 9,
+        "base_rate": null,
+        "flagged_share": null,
+        "precision": null,
+        "recall": null,
+        "roc_auc": null
+      },
+      {
+        "group": "[20-30)",
+        "encounters": 388,
+        "positives": 60,
+        "base_rate": 0.15463917525773196,
+        "flagged_share": 0.32989690721649484,
+        "precision": 0.3984375,
+        "recall": 0.85,
+        "roc_auc": 0.8733231707317073
+      },
+      {
+        "group": "[30-40)",
+        "encounters": 729,
+        "positives": 77,
+        "base_rate": 0.1056241426611797,
+        "flagged_share": 0.22085048010973937,
+        "precision": 0.2732919254658385,
+        "recall": 0.5714285714285714,
+        "roc_auc": 0.7362162377499801
+      },
+      {
+        "group": "[40-50)",
+        "encounters": 1909,
+        "positives": 202,
+        "base_rate": 0.10581456259821896,
+        "flagged_share": 0.19119958093242537,
+        "precision": 0.20821917808219179,
+        "recall": 0.37623762376237624,
+        "roc_auc": 0.6630125226933942
+      },
+      {
+        "group": "[50-60)",
+        "encounters": 3469,
+        "positives": 356,
+        "base_rate": 0.10262323436148746,
+        "flagged_share": 0.18074373018160853,
+        "precision": 0.2631578947368421,
+        "recall": 0.46348314606741575,
+        "roc_auc": 0.7126146424742922
+      },
+      {
+        "group": "[60-70)",
+        "encounters": 4266,
+        "positives": 464,
+        "base_rate": 0.1087669948429442,
+        "flagged_share": 0.2205813408345054,
+        "precision": 0.21253985122210414,
+        "recall": 0.43103448275862066,
+        "roc_auc": 0.6617127555370133
+      },
+      {
+        "group": "[70-80)",
+        "encounters": 5040,
+        "positives": 587,
+        "base_rate": 0.11646825396825397,
+        "flagged_share": 0.2857142857142857,
+        "precision": 0.18958333333333333,
+        "recall": 0.46507666098807493,
+        "roc_auc": 0.6591857947726606
+      },
+      {
+        "group": "[80-90)",
+        "encounters": 3287,
+        "positives": 390,
+        "base_rate": 0.1186492242166109,
+        "flagged_share": 0.3084879829631883,
+        "precision": 0.17751479289940827,
+        "recall": 0.46153846153846156,
+        "roc_auc": 0.6442243523361921
+      },
+      {
+        "group": "[90-100)",
+        "encounters": 547,
+        "positives": 70,
+        "base_rate": 0.12797074954296161,
+        "flagged_share": 0.28153564899451555,
+        "precision": 0.16233766233766234,
+        "recall": 0.35714285714285715,
+        "roc_auc": 0.5352800239592692
+      }
+    ],
+    "gender": [
+      {
+        "group": "Female",
+        "encounters": 10645,
+        "positives": 1188,
+        "base_rate": 0.11160169093471113,
+        "flagged_share": 0.2591827148896195,
+        "precision": 0.2069590431315694,
+        "recall": 0.48063973063973064,
+        "roc_auc": 0.6822412824448353
+      },
+      {
+        "group": "Male",
+        "encounters": 9157,
+        "positives": 1028,
+        "base_rate": 0.11226384186960794,
+        "flagged_share": 0.22736704160751336,
+        "precision": 0.2137367915465898,
+        "recall": 0.43287937743190663,
+        "roc_auc": 0.6690154454939394
+      }
+    ],
+    "race": [
+      {
+        "group": "AfricanAmerican",
+        "encounters": 3707,
+        "positives": 396,
+        "base_rate": 0.10682492581602374,
+        "flagged_share": 0.2568114378203399,
+        "precision": 0.19642857142857142,
+        "recall": 0.4722222222222222,
+        "roc_auc": 0.6717492045187605
+      },
+      {
+        "group": "Asian",
+        "encounters": 122,
+        "positives": 10,
+        "base_rate": null,
+        "flagged_share": null,
+        "precision": null,
+        "recall": null,
+        "roc_auc": null
+      },
+      {
+        "group": "Caucasian",
+        "encounters": 14886,
+        "positives": 1707,
+        "base_rate": 0.1146715034260379,
+        "flagged_share": 0.24727932285368803,
+        "precision": 0.21271393643031786,
+        "recall": 0.45869947275922673,
+        "roc_auc": 0.673309350992572
+      },
+      {
+        "group": "Hispanic",
+        "encounters": 371,
+        "positives": 39,
+        "base_rate": 0.10512129380053908,
+        "flagged_share": 0.215633423180593,
+        "precision": 0.2375,
+        "recall": 0.48717948717948717,
+        "roc_auc": 0.7636700648748841
+      },
+      {
+        "group": "Not recorded",
+        "encounters": 418,
+        "positives": 38,
+        "base_rate": 0.09090909090909091,
+        "flagged_share": 0.12679425837320574,
+        "precision": 0.16981132075471697,
+        "recall": 0.23684210526315788,
+        "roc_auc": 0.6504847645429362
+      },
+      {
+        "group": "Other",
+        "encounters": 298,
+        "positives": 26,
+        "base_rate": 0.087248322147651,
+        "flagged_share": 0.18120805369127516,
+        "precision": 0.24074074074074073,
+        "recall": 0.5,
+        "roc_auc": 0.7276583710407241
+      }
+    ]
+  },
+  "calibration": {
+    "slices": [
+      {
+        "slice": 1,
+        "encounters": 1981,
+        "mean_score": 0.04283470660448074,
+        "observed_rate": 0.04543160020191822
+      },
+      {
+        "slice": 2,
+        "encounters": 1981,
+        "mean_score": 0.05667352303862572,
+        "observed_rate": 0.053003533568904596
+      },
+      {
+        "slice": 3,
+        "encounters": 1980,
+        "mean_score": 0.06705009937286377,
+        "observed_rate": 0.06616161616161616
+      },
+      {
+        "slice": 4,
+        "encounters": 1980,
+        "mean_score": 0.07707533240318298,
+        "observed_rate": 0.0696969696969697
+      },
+      {
+        "slice": 5,
+        "encounters": 1980,
+        "mean_score": 0.08840934932231903,
+        "observed_rate": 0.08535353535353535
+      },
+      {
+        "slice": 6,
+        "encounters": 1980,
+        "mean_score": 0.10148610174655914,
+        "observed_rate": 0.09696969696969697
+      },
+      {
+        "slice": 7,
+        "encounters": 1980,
+        "mean_score": 0.1173451617360115,
+        "observed_rate": 0.12070707070707071
+      },
+      {
+        "slice": 8,
+        "encounters": 1980,
+        "mean_score": 0.13935586810112,
+        "observed_rate": 0.13383838383838384
+      },
+      {
+        "slice": 9,
+        "encounters": 1980,
+        "mean_score": 0.17343690991401672,
+        "observed_rate": 0.1707070707070707
+      },
+      {
+        "slice": 10,
+        "encounters": 1980,
+        "mean_score": 0.2798628509044647,
+        "observed_rate": 0.2772727272727273
+      }
+    ],
+    "overall": {
+      "mean_score": 0.1143464744091034,
+      "observed_rate": 0.11190788809211191,
+      "brier_score": 0.09401583390052244,
+      "brier_score_of_always_predicting_the_base_rate": 0.09938451267487529
+    }
+  },
+  "min_group": {
+    "encounters": 100,
+    "positives": 20
+  }
+}

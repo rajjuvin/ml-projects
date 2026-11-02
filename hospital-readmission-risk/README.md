@@ -32,7 +32,7 @@ After the model, settings and threshold were fixed, XGBoost was scored once on t
 
 "Flagged" is the share of test encounters whose predicted probability is at or above the threshold (0.1405).
 
-These agree closely with the cross-validated figures above (ROC-AUC 0.679, PR-AUC 0.234), so the results do not appear to be overfitted to the training data. At the chosen threshold the model flags about 24% of encounters; roughly 1 in 5 of those is readmitted within 30 days, and about 46% of all readmissions are caught. Full details are in the [model card](docs/model_card.md).
+These agree closely with the cross-validated figures above (ROC-AUC 0.679, PR-AUC 0.234), so the results do not appear to be overfitted to the training data. At the chosen threshold the model flags about 24% of encounters; roughly 1 in 5 of those is readmitted within 30 days, and about 46% of all readmissions are caught. With 95% intervals from resampling patients, ROC-AUC is 0.676 (0.660 to 0.690), precision 0.210 (0.194 to 0.223) and recall 0.459 (0.430 to 0.485). In each tenth of the test set the average score is close to the observed readmission rate, so the scores are approximately calibrated on this split. Performance does differ between groups, for example by age, and the model card lists them. `python -m readmission.analyze` reproduces all of this. Full details are in the [model card](docs/model_card.md).
 
 ### What the numbers say
 - XGBoost is the strongest model, but only moderately: the dataset carries limited predictive signal, and the gap to logistic regression is small (about 0.016 PR-AUC, roughly four times the fold-to-fold spread).
@@ -47,7 +47,7 @@ tests/              unit tests on synthetic data (no dataset needed)
 notebooks/          exploration, model tuning and comparison (hospreadmissionpred.ipynb)
 scripts/            download_data.py
 docs/               model card
-reports/            saved comparison table and tuned hyperparameters (best_params.json)
+reports/            saved comparison table, tuned hyperparameters (best_params.json) and the test-set analysis (test_analysis.json)
 data/, models/      downloaded data and trained artifacts (not committed)
 ```
 
@@ -66,6 +66,7 @@ pytest                                            # unit tests
 python -m readmission.tune                        # optional: re-run the hyperparameter search, rewrites reports/best_params.json (about 20 minutes)
 python -m readmission.compare                     # reproduce the comparison table (a few minutes)
 python -m readmission.train --model xgboost       # trains, picks the threshold, saves models/readmission_model.joblib
+python -m readmission.analyze                     # test-set intervals, results by group and calibration, saved to reports/test_analysis.json (about 30 seconds)
 ```
 
 `train` and `compare` read the tuned values from `reports/best_params.json`. To try one model without waiting for all five, use `python -m readmission.compare --models decision_tree` (prints the result and does not overwrite the saved table), or `python -m readmission.tune --models decision_tree` to re-tune just that model.
@@ -84,7 +85,7 @@ python -m readmission.app        # then open http://127.0.0.1:8000   (or the rea
 - **Upload a file:** a CSV with one row per encounter, at most 10 rows and 50 KB. The page links a sample as a plain CSV or as an Excel workbook (a "Sample data" sheet plus a "Field guide" sheet that explains every column), and lists every column with its meaning and allowed values.
 - **Result:** for each row, only the row number, a risk score, whether it is flagged (at or above the model's cutoff) and a short explanation. Nothing that was entered is shown again, and the form and file picker are cleared after every submission.
 - **Privacy by design:** requests are scored in memory. Nothing is written to disk and no request data is logged, error messages never repeat what was entered, and responses are not cacheable. The page asks users not to enter real patient information. The tests check these properties.
-- **API:** `POST /api/predict` (JSON for one encounter), `POST /api/predict-file` (CSV text), `GET /api/health`, `GET /api/schema` and `GET /api/stats`. The risk score is a ranking score, not a calibrated probability.
+- **API:** `POST /api/predict` (JSON for one encounter), `POST /api/predict-file` (CSV text), `GET /api/health`, `GET /api/schema` and `GET /api/stats`. The page presents the risk score as a ranking score, not an exact chance; on the held-out test set the scores were close to the observed rates (see the model card), but that was checked on one split only.
 - **Usage totals:** `GET /api/stats` shows running totals since the instance started: encounters scored, how many were flagged, inputs rejected and unexpected errors. They are counts only (nothing about any single request is kept) and start again from zero on a restart.
 - **Notice mode:** set the environment variable `READMISSION_NOTICE` to a sentence and the page shows it instead of the form, while scoring answers 503 with it. `GET /api/health` stays healthy and reports `"mode": "notice"`. Unset the variable to return to normal.
 - **Logging:** an unexpected error is logged as one line naming only the kind of error (never its message, which could contain submitted values). Nothing else about a request is logged by the app. A hosting platform keeps its own request log; see the model card.
