@@ -108,7 +108,7 @@ docker run --rm -p 8080:8080 readmission-app      # then open http://localhost:8
 A copy of the web app runs on Google Cloud Run: <https://readmission-app-364492331058.us-central1.run.app>
 
 - It is a learning demonstration, subject to every limitation in the [model card](docs/model_card.md). Do not enter real patient information.
-- It runs on a small budget and a free trial, so it may be paused or taken down at any time. It scales to zero when nobody is using it, so the first visit after a quiet period can take a few seconds to start.
+- It runs on a small budget and a free trial, so it may be paused or taken down at any time. It scales to zero when nobody is using it, so the first visit after a quiet period (about 15 minutes) takes roughly 5 to 8 seconds while the container starts; later requests answer in a fraction of a second.
 - The app stores nothing and logs nothing about what is submitted. The hosting platform keeps its own request log (time, the visitor's IP address, browser and result code), which the app cannot switch off.
 - `GET /api/health` shows which release is live (`app_version`) and whether it is in notice mode; `GET /api/stats` shows running totals since the current instance started.
 
