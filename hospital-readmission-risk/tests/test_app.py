@@ -50,6 +50,10 @@ def test_page_assets_and_privacy_headers(client):
     for declaration in DECLARATIONS:
         assert html.escape(declaration.split(". ")[0]) in header
     assert "Do not enter real patient information" in header and "{{" not in page.text
+    # the notice also leads back to the model card and the source code on GitHub
+    repo = "https://github.com/rajjuvin/ml-projects/"
+    assert f'href="{repo}blob/main/hospital-readmission-risk/docs/model_card.md"' in header
+    assert f'href="{repo}tree/main/hospital-readmission-risk"' in header
     for path in ("/static/app.js", "/static/style.css", "/sample.csv"):
         assert client.get(path).status_code == 200
     assert page.headers["cache-control"] == "no-store"

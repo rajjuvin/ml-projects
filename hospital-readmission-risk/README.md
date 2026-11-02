@@ -103,6 +103,44 @@ docker run --rm -p 8080:8080 readmission-app      # then open http://localhost:8
 - `GET /api/health` returns `status`, the model name and cutoff, the app version, when the model was created and the mode (`normal` or `notice`). The image's health check calls it.
 - `.dockerignore` is an allow-list: only the code, the pinned requirements and the two model files enter the image, never the dataset, notes or tests.
 
+## Live demo
+
+A copy of the web app runs on Google Cloud Run: <https://readmission-app-364492331058.us-central1.run.app>
+
+- It is a learning demonstration, subject to every limitation in the [model card](docs/model_card.md). Do not enter real patient information.
+- It runs on a small budget and a free trial, so it may be paused or taken down at any time. It scales to zero when nobody is using it, so the first visit after a quiet period can take a few seconds to start.
+- The app stores nothing and logs nothing about what is submitted. The hosting platform keeps its own request log (time, the visitor's IP address, browser and result code), which the app cannot switch off.
+- `GET /api/health` shows which release is live (`app_version`) and whether it is in notice mode; `GET /api/stats` shows running totals since the current instance started.
+
+### Release, deploy and roll back
+
+A release is a version tag. The image is published to `ghcr.io/rajjuvin/readmission-app:<version>`, and the owner deploys it by hand.
+
+1. Change `__version__` in `src/readmission/__init__.py` (the only place it is written), then commit and push. Wait for the tests to pass.
+2. Tag and push: `git tag -a vX.Y.Z -m "Release X.Y.Z"` then `git push origin vX.Y.Z`. The release workflow checks that the tag matches the version, builds the image, starts it, scores a sample file and only then publishes it.
+3. Deploy the new image as a named revision, then check `/api/health`:
+
+```bash
+gcloud run deploy readmission-app --image ghcr.io/rajjuvin/readmission-app:X.Y.Z --region us-central1 --memory 512Mi --cpu 1 --min-instances 0 --max-instances 1 --timeout 30 --revision-suffix vX-Y-Z
+```
+
+Every deploy or setting change keeps the earlier revisions, so a rollback moves traffic rather than rebuilding anything:
+
+```bash
+gcloud run services update-traffic readmission-app --region us-central1 --to-revisions readmission-app-vA-B-C=100   # back to an earlier revision
+gcloud run services update-traffic readmission-app --region us-central1 --to-latest                                   # forward again
+```
+
+To pause scoring with a message, set `READMISSION_NOTICE` (see Web app) and remove it afterwards; to take the app offline at once, remove the public-access permission:
+
+```bash
+gcloud run services update readmission-app --region us-central1 --update-env-vars "READMISSION_NOTICE=The demo is paused for maintenance." --revision-suffix vX-Y-Z-paused-1
+gcloud run services update readmission-app --region us-central1 --remove-env-vars READMISSION_NOTICE --revision-suffix vX-Y-Z-live-2
+gcloud run services remove-iam-policy-binding readmission-app --region us-central1 --member=allUsers --role=roles/run.invoker
+```
+
+The rollback and both off switches were each tried once on the live service.
+
 ## Method summary
 
 - **Cohort:** inpatient encounters with a diabetes diagnosis, excluding death and hospice discharges. 101,766 encounters in the source data.
@@ -117,7 +155,7 @@ docker run --rm -p 8080:8080 readmission-app      # then open http://localhost:8
 2. ✅ Reproducible package, tests and CI
 3. ✅ Reproducible hyperparameter tuning script, with tuned values stored in a JSON file
 4. ✅ Prediction API (FastAPI) and web page (form and CSV upload) with input validation and tests
-5. Docker packaging, live deployment, monitoring and rollback procedure
+5. ✅ Docker packaging, live deployment on Google Cloud Run, usage totals and a rollback procedure
 6. Final write-up
 
 ## Data and attribution

@@ -69,6 +69,7 @@ h2 { font-size: 1.2rem; margin: 0 0 12px; }
   margin: 0 0 28px;
   text-align: left;
 }
+.notice a { color: var(--accent); }
 
 .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .tabs button {
