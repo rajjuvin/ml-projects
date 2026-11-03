@@ -63,17 +63,31 @@ python -m venv .venv
 pip install -r requirements-dev.txt
 pip install -e . --no-deps
 
-python scripts/download_data.py                   # fetches and verifies the UCI dataset into data/
-pytest                                            # unit tests
-python -m readmission.tune                        # optional: re-run the hyperparameter search, rewrites reports/best_params.json (about 20 minutes)
-python -m readmission.compare                     # reproduce the comparison table (a few minutes)
-python -m readmission.train --model xgboost       # trains, picks the threshold, saves models/readmission_model.joblib
-python -m readmission.analyze                     # test-set intervals, results by group and calibration, saved to reports/test_analysis.json (about 30 seconds)
+pytest                                            # unit tests (no dataset needed)
+python -m readmission.app                         # the web app, on the included model: open http://127.0.0.1:8000
 ```
 
-`train` and `compare` read the tuned values from `reports/best_params.json`. To try one model without waiting for all five, use `python -m readmission.compare --models decision_tree` (prints the result and does not overwrite the saved table), or `python -m readmission.tune --models decision_tree` to re-tune just that model.
+The repository already includes a trained model, so nothing needs training to run the app. To reproduce or change the model, see the next section.
 
-`python -m readmission.train --evaluate-test` also scores the held-out test set. Run it once, after the model and threshold are final.
+## Retrain the model yourself
+
+First get the data (`python scripts/download_data.py` fetches and verifies the UCI dataset into `data/`), then run the steps below from this folder.
+
+| Step | Command | Writes | Time | Needed? |
+|---|---|---|---|---|
+| 1. Tune the settings | `python -m readmission.tune` (add `--models xgboost` for one model) | `reports/best_params.json` | about 20 minutes | optional: skip it to keep the committed settings |
+| 2. Compare the models | `python -m readmission.compare` (add `--models decision_tree` to try one; it prints and does not overwrite the saved table) | `reports/oof_comparison.csv` | about 3 minutes | optional: after tuning, to see which model is best |
+| 3. Train | `python -m readmission.train --model xgboost` | `models/readmission_model.joblib`, `models/metadata.json` | under a minute | yes |
+| 4. Describe the test set | `python -m readmission.analyze` | `reports/test_analysis.json` | about 30 seconds | recommended |
+| 5. Redraw the figures | `python scripts/make_figures.py` | `docs/figures/` | seconds | only if the results changed |
+
+- `train` and `compare` read the tuned settings from `reports/best_params.json`. With the committed settings and the pinned library versions, step 3 gives the same model: on the maintainer's computer, retraining produced an identical threshold, metrics and scores. Other platforms may differ slightly.
+- These commands overwrite files that are committed. `git diff` shows what changed, and `git restore models reports docs/figures` returns everything to the published versions.
+- Score the held-out test set once, with `train --evaluate-test`, after the model and threshold are final. `analyze` also reads the test set, but only to describe it. If you tune again because of what the test set showed, it is no longer an unbiased estimate.
+- To use another model, train with `--model logistic_regression`, `decision_tree`, `random_forest`, `xgboost` or `mlp`. The web app runs whichever model is in `models/`.
+- `models.py` holds the model definitions and default settings. You never run it. To change what the search tries, edit the search grids in `tune.py`.
+- The numbers in this README, the model card and the report are written by hand. After retraining, copy the new numbers from `reports/`.
+- A saved model is a pickle, so train with the library versions in `requirements.txt`.
 
 ## Web app
 
