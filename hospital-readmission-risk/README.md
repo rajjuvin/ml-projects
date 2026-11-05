@@ -4,6 +4,8 @@ Estimates the probability that a diabetic inpatient encounter is followed by a h
 
 > **Retrospective engineering prototype, not a clinically validated tool.** It uses 1999-2008 data, does not recommend treatment, and must not be used to decide who receives care. See the [model card](docs/model_card.md), and the [project report](docs/PROJECT_REPORT.md) for the whole story from question to live service.
 
+**Try it:** the [live demo](https://readmission-app-364492331058.us-central1.run.app). **Run it yourself:** see [Run the app](#run-the-app) for four options, with steps for each.
+
 ## Results so far
 
 Five models compared on the same patient-grouped, 5-fold cross-validation of the training data (out-of-fold predictions; the held-out test set played no part in this comparison). About 11.4% of encounters are positive, so the PR-AUC of a random guess is 0.114.
@@ -53,21 +55,107 @@ models/             the trained model and its metadata (readmission_model.joblib
                     one exact code-and-model pair; `readmission.train` recreates them
 ```
 
-## Quickstart
+## Run the app
 
-Requires Python 3.13. Dependency versions are pinned in `requirements.txt`.
+Choose one option and follow all of its steps. The repository already includes the trained model, so nothing has to be trained or downloaded to run the app.
 
-```bash
-python -m venv .venv
-.venv/Scripts/activate        # macOS/Linux: source .venv/bin/activate
-pip install -r requirements-dev.txt
-pip install -e . --no-deps
+| Option | Best if you want to | You need |
+|---|---|---|
+| [1. Use the live demo](#option-1-use-the-live-demo) | just try it | a web browser |
+| [2. Run it with Python](#option-2-run-it-with-python) | run the code and the tests on your computer | Python 3.13, and Git or a zip download |
+| [3. Build and run with Docker](#option-3-build-and-run-with-docker) | build the container from this source | Docker, and Git or a zip download |
+| [4. Run the published Docker image](#option-4-run-the-published-docker-image) | the quickest way with Docker | Docker only |
 
-pytest                                            # unit tests (no dataset needed)
-python -m readmission.app                         # the web app, on the included model: open http://127.0.0.1:8000
-```
+### Option 1: Use the live demo
 
-The repository already includes a trained model, so nothing needs training to run the app. To reproduce or change the model, see the next section.
+1. Open <https://readmission-app-364492331058.us-central1.run.app>.
+2. On the **Enter values** tab, choose **Fill with an example**, then **Get risk score**. Or open the **Upload a file** tab, download the sample CSV from the page, and upload it.
+3. Use made-up values only. Do not enter real patient information.
+
+The demo runs on a small budget, so it may be paused, and the first visit after a quiet period takes about 5 to 8 seconds (see [Live demo](#live-demo)).
+
+### Option 2: Run it with Python
+
+You need Python 3.13 (the pinned library versions are for it) and either Git or the zip download.
+
+1. Get the code. With Git:
+
+   ```bash
+   git clone https://github.com/rajjuvin/ml-projects.git
+   cd ml-projects/hospital-readmission-risk
+   ```
+
+   Without Git: on the repository's GitHub page choose **Code**, then **Download ZIP**, unzip it, and open a terminal in the `hospital-readmission-risk` folder.
+
+2. Create and activate a virtual environment.
+
+   - Windows (PowerShell): `python -m venv .venv` then `.venv\Scripts\Activate.ps1`
+   - Windows (Command Prompt): `python -m venv .venv` then `.venv\Scripts\activate.bat`
+   - macOS or Linux: `python3 -m venv .venv` then `source .venv/bin/activate`
+
+3. Install the libraries at their pinned versions, then the package itself (this can take a few minutes):
+
+   ```bash
+   pip install -r requirements.txt
+   pip install -e . --no-deps
+   ```
+
+4. Start the app and open <http://127.0.0.1:8000> in a browser:
+
+   ```bash
+   python -m readmission.app
+   ```
+
+   Stop it with Ctrl+C. To use another port, add `--port 8080`. The `readmission-serve` command does the same as `python -m readmission.app`.
+
+5. Optional, to run the tests (they need no dataset):
+
+   ```bash
+   pip install -r requirements-dev.txt
+   pytest
+   ```
+
+To reproduce or change the model itself, see [Retrain the model yourself](#retrain-the-model-yourself).
+
+### Option 3: Build and run with Docker
+
+You need Docker (Docker Desktop on Windows or macOS, or Docker Engine on Linux), started and running, and either Git or the zip download.
+
+1. Get the code and open a terminal in the `hospital-readmission-risk` folder, as in step 1 of Option 2.
+
+2. Build the image. The first build downloads the base image and the libraries and takes a few minutes; the image is about 0.7 GB:
+
+   ```bash
+   docker build -t readmission-app .
+   ```
+
+3. Run it and open <http://localhost:8080> in a browser:
+
+   ```bash
+   docker run --rm -p 8080:8080 readmission-app
+   ```
+
+4. Check that it is healthy by opening <http://localhost:8080/api/health>. It shows the app version and `"status":"ok"`.
+
+5. Stop it with Ctrl+C in that terminal, or find the container's name with `docker ps` and run `docker stop <container name>` from another terminal. `--rm` deletes the container when it stops. To free the disk space later, run `docker rmi readmission-app`.
+
+To use a different port on your computer, change the first number: `-p 9000:8080` serves the app at <http://localhost:9000>.
+
+### Option 4: Run the published Docker image
+
+Each release is built and tested on GitHub and published as a ready-made image, so you do not need the code, Python or a build. You need only Docker, started and running.
+
+1. Run it. The first time, Docker downloads the image (about 160 MB; no login is needed because the package is public):
+
+   ```bash
+   docker run --rm -p 8080:8080 ghcr.io/rajjuvin/readmission-app:0.2.2
+   ```
+
+   Images are tagged with the release number and there is no `latest` tag, so use the newest version listed under the repository's Packages on GitHub.
+
+2. Open <http://localhost:8080> in a browser, and <http://localhost:8080/api/health> to see which version is running.
+
+3. Stop it with Ctrl+C. To free the disk space later, run `docker rmi ghcr.io/rajjuvin/readmission-app:0.2.2`.
 
 ## Retrain the model yourself
 
@@ -79,7 +167,7 @@ First get the data (`python scripts/download_data.py` fetches and verifies the U
 | 2. Compare the models | `python -m readmission.compare` (add `--models decision_tree` to try one; it prints and does not overwrite the saved table) | `reports/oof_comparison.csv` | about 3 minutes | optional: after tuning, to see which model is best |
 | 3. Train | `python -m readmission.train --model xgboost` | `models/readmission_model.joblib`, `models/metadata.json` | under a minute | yes |
 | 4. Describe the test set | `python -m readmission.analyze` | `reports/test_analysis.json` | about 30 seconds | recommended |
-| 5. Redraw the figures | `python scripts/make_figures.py` | `docs/figures/` | seconds | only if the results changed |
+| 5. Redraw the figures | `python scripts/make_figures.py` | `docs/figures/` | seconds | only if the results changed (needs `pip install -r requirements-dev.txt` for the plotting library) |
 
 - `train` and `compare` read the tuned settings from `reports/best_params.json`. With the committed settings and the pinned library versions, step 3 gives the same model: on the maintainer's computer, retraining produced an identical threshold, metrics and scores. Other platforms may differ slightly.
 - These commands overwrite files that are committed. `git diff` shows what changed, and `git restore models reports docs/figures` returns everything to the published versions.
@@ -93,9 +181,7 @@ First get the data (`python scripts/download_data.py` fetches and verifies the U
 
 A small web page that scores encounters with the trained model. It needs the trained model files in `models/`, which are included in the repository (`readmission.train` recreates them). A `.joblib` file is a Python pickle, so only load model files you trained yourself or took from this repository.
 
-```bash
-python -m readmission.app        # then open http://127.0.0.1:8000   (or the readmission-serve command)
-```
+Start it with any of the options in [Run the app](#run-the-app).
 
 - **Enter values:** a form with one field per model input, each with a short question or description. Diabetes drugs start as "No"; add a medication row only for drugs that were prescribed. The secondary and additional diagnosis codes are optional. The medication answers must agree with the listed drugs (for example, "prescribed = Yes" needs at least one drug, and a drug marked Up or Down needs "changed = Yes"), because the model never saw contradictory combinations.
 - **Upload a file:** a CSV with one row per encounter, at most 10 rows and 50 KB. The page links a sample as a plain CSV or as an Excel workbook (a "Sample data" sheet plus a "Field guide" sheet that explains every column), and lists every column with its meaning and allowed values.
@@ -108,12 +194,7 @@ python -m readmission.app        # then open http://127.0.0.1:8000   (or the rea
 
 ## Docker
 
-The `Dockerfile` packages the web app together with the trained model (`models/readmission_model.joblib` and `models/metadata.json` are committed for this reason, so a release is one exact code-and-model pair). From this folder:
-
-```bash
-docker build -t readmission-app .
-docker run --rm -p 8080:8080 readmission-app      # then open http://localhost:8080
-```
+The `Dockerfile` packages the web app together with the trained model (`models/readmission_model.joblib` and `models/metadata.json` are committed for this reason, so a release is one exact code-and-model pair). The steps to build it yourself are in [Option 3](#option-3-build-and-run-with-docker), and those to run the published image are in [Option 4](#option-4-run-the-published-docker-image).
 
 - The image is Linux-based and about 0.7 GB. The server runs as an ordinary user (not root) and listens on the port named by the `PORT` variable (8080 by default).
 - The libraries are installed at the pinned versions in `requirements.txt`, with `xgboost-cpu` (the same release without the large GPU libraries) in place of `xgboost`. To build with the standard package instead, add `--build-arg XGBOOST_PACKAGE=xgboost`; the app itself would also need a change to ask XGBoost for a GPU, since the model is set up for the CPU.
